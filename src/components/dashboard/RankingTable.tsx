@@ -1,6 +1,7 @@
-import { Trophy, Medal, Crown, ChevronRight } from 'lucide-react';
+import { Trophy, Medal, Crown, ChevronRight, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Employee, calculateTotalPerformance, getPerformanceLevel } from '@/types/employee';
 import { cn } from '@/lib/utils';
 
@@ -11,9 +12,10 @@ interface RankingTableProps {
 
 export function RankingTable({ employees, onSelectEmployee }: RankingTableProps) {
   const rankedEmployees = [...employees]
+    .filter(emp => emp.status === 'active')
     .map(emp => ({
       ...emp,
-      totalPerformance: calculateTotalPerformance(emp.goals)
+      totalPerformance: calculateTotalPerformance(emp)
     }))
     .sort((a, b) => b.totalPerformance - a.totalPerformance);
 
@@ -67,10 +69,11 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
           {rankedEmployees.map((employee, index) => {
             const level = getPerformanceLevel(employee.totalPerformance);
             const isTopThree = index < 3;
+            const isTopTen = index < 10;
             const isAbove100 = employee.totalPerformance >= 100;
 
             return (
@@ -79,7 +82,8 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
                 onClick={() => onSelectEmployee(employee)}
                 className={cn(
                   "w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors text-left",
-                  isTopThree && "bg-accent/5"
+                  isTopThree && "bg-accent/5",
+                  !isTopThree && isTopTen && "bg-primary/5"
                 )}
               >
                 <div className={cn(
@@ -97,17 +101,25 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium truncate">{employee.name}</span>
+                    {isTopThree && (
+                      <Star className="w-4 h-4 text-accent fill-accent" />
+                    )}
                     {isAbove100 && (
-                      <span className="text-xs bg-performance-excellent/10 text-performance-excellent px-2 py-0.5 rounded-full font-medium">
+                      <Badge variant="outline" className="text-xs bg-performance-excellent/10 text-performance-excellent border-performance-excellent/30">
                         +100%
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   <span className="text-sm text-muted-foreground">{employee.role}</span>
                 </div>
 
-                <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
-                  {employee.totalPerformance.toFixed(1)}%
+                <div className="text-right">
+                  <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
+                    {employee.totalPerformance.toFixed(1)}%
+                  </div>
+                  {employee.performanceBonus > 0 && (
+                    <span className="text-xs text-accent">+{employee.performanceBonus}% bônus</span>
+                  )}
                 </div>
 
                 <ChevronRight className="w-5 h-5 text-muted-foreground" />

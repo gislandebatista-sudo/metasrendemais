@@ -1,5 +1,7 @@
 import { Employee } from '@/types/employee';
 
+const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+
 export const mockEmployees: Employee[] = [
   {
     id: '1',
@@ -8,10 +10,18 @@ export const mockEmployees: Employee[] = [
     role: 'Gerente de Vendas',
     sector: 'Comercial',
     admissionDate: '2020-03-15',
-    goals: [
-      { id: 'g1', name: 'Meta de Vendas', description: 'Atingir faturamento mensal', weight: 40, achieved: 105 },
-      { id: 'g2', name: 'Novos Clientes', description: 'Prospecção de novos clientes', weight: 30, achieved: 98 },
-      { id: 'g3', name: 'Satisfação', description: 'NPS dos clientes', weight: 30, achieved: 102 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 5,
+    macroGoals: [
+      { id: 'mg1', name: 'Meta de Faturamento', description: 'Atingir faturamento mensal de R$ 500.000', weight: 40, achieved: 105, deadline: '2025-01-25', deliveryDate: '2025-01-20' },
+      { id: 'mg2', name: 'Novos Contratos', description: 'Fechar 10 novos contratos', weight: 35, achieved: 100, deadline: '2025-01-30', deliveryDate: '2025-01-30' },
+      { id: 'mg3', name: 'NPS Clientes', description: 'NPS acima de 80', weight: 25, achieved: 98, deadline: '2025-01-31', deliveryDate: '2025-01-28' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Relatório Semanal', description: 'Entregar relatórios semanais', weight: 30, achieved: 100, deadline: '2025-01-07', deliveryDate: '2025-01-06' },
+      { id: 'sg2', name: 'Reuniões de Equipe', description: 'Conduzir reuniões semanais', weight: 30, achieved: 105, deadline: '2025-01-31', deliveryDate: '2025-01-25' },
+      { id: 'sg3', name: 'Treinamento CRM', description: 'Capacitar equipe no novo CRM', weight: 40, achieved: 95, deadline: '2025-01-20', deliveryDate: '2025-01-22' },
     ],
   },
   {
@@ -21,10 +31,17 @@ export const mockEmployees: Employee[] = [
     role: 'Analista Financeiro',
     sector: 'Financeiro',
     admissionDate: '2019-08-01',
-    goals: [
-      { id: 'g1', name: 'Fechamento Contábil', weight: 35, achieved: 100 },
-      { id: 'g2', name: 'Redução de Custos', weight: 35, achieved: 95 },
-      { id: 'g3', name: 'Relatórios', weight: 30, achieved: 100 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 3,
+    macroGoals: [
+      { id: 'mg1', name: 'Fechamento Contábil', description: 'Fechar balanço mensal', weight: 40, achieved: 100, deadline: '2025-01-05', deliveryDate: '2025-01-05' },
+      { id: 'mg2', name: 'Redução de Custos', description: 'Reduzir custos em 10%', weight: 35, achieved: 95, deadline: '2025-01-31', deliveryDate: '2025-01-29' },
+      { id: 'mg3', name: 'Relatórios DRE', description: 'Elaborar DRE detalhado', weight: 25, achieved: 100, deadline: '2025-01-10', deliveryDate: '2025-01-08' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Conciliação Bancária', description: 'Conciliação diária', weight: 50, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-31' },
+      { id: 'sg2', name: 'Análise de Fluxo', description: 'Análise semanal de fluxo de caixa', weight: 50, achieved: 98, deadline: '2025-01-28', deliveryDate: '2025-01-27' },
     ],
   },
   {
@@ -34,10 +51,18 @@ export const mockEmployees: Employee[] = [
     role: 'Coordenadora de RH',
     sector: 'Recursos Humanos',
     admissionDate: '2021-01-10',
-    goals: [
-      { id: 'g1', name: 'Recrutamento', weight: 40, achieved: 88 },
-      { id: 'g2', name: 'Treinamentos', weight: 30, achieved: 105 },
-      { id: 'g3', name: 'Clima Organizacional', weight: 30, achieved: 92 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 2,
+    macroGoals: [
+      { id: 'mg1', name: 'Recrutamento Q1', description: 'Contratar 5 novos funcionários', weight: 45, achieved: 88, deadline: '2025-01-31' },
+      { id: 'mg2', name: 'Programa de Treinamento', description: 'Implementar novo programa', weight: 30, achieved: 105, deadline: '2025-01-20', deliveryDate: '2025-01-15' },
+      { id: 'mg3', name: 'Pesquisa de Clima', description: 'Aplicar pesquisa semestral', weight: 25, achieved: 92, deadline: '2025-01-25', deliveryDate: '2025-01-26' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Onboarding', description: 'Processo de integração', weight: 40, achieved: 100, deadline: '2025-01-15', deliveryDate: '2025-01-14' },
+      { id: 'sg2', name: 'Benefícios', description: 'Revisão de benefícios', weight: 30, achieved: 85, deadline: '2025-01-31', deliveryDate: '2025-02-02' },
+      { id: 'sg3', name: 'Folha de Pagamento', description: 'Processamento correto', weight: 30, achieved: 100, deadline: '2025-01-05', deliveryDate: '2025-01-04' },
     ],
   },
   {
@@ -47,10 +72,18 @@ export const mockEmployees: Employee[] = [
     role: 'Desenvolvedor Senior',
     sector: 'Tecnologia',
     admissionDate: '2018-05-20',
-    goals: [
-      { id: 'g1', name: 'Entregas de Sprint', weight: 50, achieved: 100 },
-      { id: 'g2', name: 'Code Review', weight: 25, achieved: 105 },
-      { id: 'g3', name: 'Documentação', weight: 25, achieved: 90 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 4,
+    macroGoals: [
+      { id: 'mg1', name: 'Entregas de Sprint', description: 'Entregar 100% das tarefas', weight: 50, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-30' },
+      { id: 'mg2', name: 'Code Review', description: 'Revisar PRs da equipe', weight: 30, achieved: 105, deadline: '2025-01-31', deliveryDate: '2025-01-28' },
+      { id: 'mg3', name: 'Documentação Técnica', description: 'Documentar novos módulos', weight: 20, achieved: 90, deadline: '2025-01-25', deliveryDate: '2025-01-27' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Daily Meetings', description: 'Participação nas dailies', weight: 25, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-31' },
+      { id: 'sg2', name: 'Mentoria Jr', description: 'Mentorar desenvolvedores jr', weight: 25, achieved: 105, deadline: '2025-01-31', deliveryDate: '2025-01-20' },
+      { id: 'sg3', name: 'Refatoração', description: 'Refatorar módulo legado', weight: 50, achieved: 95, deadline: '2025-01-28', deliveryDate: '2025-01-28' },
     ],
   },
   {
@@ -60,10 +93,19 @@ export const mockEmployees: Employee[] = [
     role: 'Gerente de Marketing',
     sector: 'Marketing',
     admissionDate: '2020-11-05',
-    goals: [
-      { id: 'g1', name: 'Leads Qualificados', weight: 40, achieved: 103 },
-      { id: 'g2', name: 'Engajamento Social', weight: 30, achieved: 105 },
-      { id: 'g3', name: 'Campanhas', weight: 30, achieved: 98 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 5,
+    macroGoals: [
+      { id: 'mg1', name: 'Leads Qualificados', description: 'Gerar 200 leads qualificados', weight: 40, achieved: 103, deadline: '2025-01-31', deliveryDate: '2025-01-29' },
+      { id: 'mg2', name: 'Engajamento Social', description: 'Aumentar engajamento em 30%', weight: 30, achieved: 105, deadline: '2025-01-31', deliveryDate: '2025-01-25' },
+      { id: 'mg3', name: 'Campanhas Q1', description: 'Lançar 3 campanhas', weight: 30, achieved: 100, deadline: '2025-01-20', deliveryDate: '2025-01-20' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Conteúdo Blog', description: '8 artigos mensais', weight: 30, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-30' },
+      { id: 'sg2', name: 'Newsletter', description: '4 newsletters', weight: 20, achieved: 105, deadline: '2025-01-28', deliveryDate: '2025-01-22' },
+      { id: 'sg3', name: 'Análise de Métricas', description: 'Relatório semanal', weight: 25, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-31' },
+      { id: 'sg4', name: 'SEO', description: 'Otimização de páginas', weight: 25, achieved: 95, deadline: '2025-01-25', deliveryDate: '2025-01-26' },
     ],
   },
   {
@@ -73,10 +115,17 @@ export const mockEmployees: Employee[] = [
     role: 'Analista de Operações',
     sector: 'Operações',
     admissionDate: '2022-02-14',
-    goals: [
-      { id: 'g1', name: 'Eficiência Operacional', weight: 35, achieved: 75 },
-      { id: 'g2', name: 'SLA de Atendimento', weight: 35, achieved: 82 },
-      { id: 'g3', name: 'Processos', weight: 30, achieved: 78 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 0,
+    macroGoals: [
+      { id: 'mg1', name: 'Eficiência Operacional', description: 'Aumentar eficiência em 15%', weight: 40, achieved: 75, deadline: '2025-01-31' },
+      { id: 'mg2', name: 'SLA de Atendimento', description: 'Manter SLA em 95%', weight: 35, achieved: 82, deadline: '2025-01-31', deliveryDate: '2025-02-03' },
+      { id: 'mg3', name: 'Processos', description: 'Documentar processos', weight: 25, achieved: 78, deadline: '2025-01-20', deliveryDate: '2025-01-28' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Inventário', description: 'Controle de inventário', weight: 50, achieved: 70, deadline: '2025-01-15' },
+      { id: 'sg2', name: 'Logística', description: 'Otimizar rotas', weight: 50, achieved: 80, deadline: '2025-01-25', deliveryDate: '2025-01-30' },
     ],
   },
   {
@@ -86,10 +135,18 @@ export const mockEmployees: Employee[] = [
     role: 'Diretora Comercial',
     sector: 'Comercial',
     admissionDate: '2017-06-01',
-    goals: [
-      { id: 'g1', name: 'Faturamento Geral', weight: 50, achieved: 102 },
-      { id: 'g2', name: 'Expansão', weight: 30, achieved: 105 },
-      { id: 'g3', name: 'Retenção', weight: 20, achieved: 100 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 5,
+    macroGoals: [
+      { id: 'mg1', name: 'Faturamento Geral', description: 'Atingir R$ 2M', weight: 50, achieved: 102, deadline: '2025-01-31', deliveryDate: '2025-01-28' },
+      { id: 'mg2', name: 'Expansão Regional', description: 'Abrir 2 novas praças', weight: 30, achieved: 105, deadline: '2025-01-31', deliveryDate: '2025-01-20' },
+      { id: 'mg3', name: 'Retenção de Clientes', description: 'Manter churn abaixo de 5%', weight: 20, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-31' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Reuniões Estratégicas', description: 'Reuniões com diretoria', weight: 30, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-30' },
+      { id: 'sg2', name: 'Gestão de Equipe', description: 'Feedbacks mensais', weight: 35, achieved: 105, deadline: '2025-01-25', deliveryDate: '2025-01-18' },
+      { id: 'sg3', name: 'Parcerias', description: 'Fechar 3 parcerias', weight: 35, achieved: 100, deadline: '2025-01-31', deliveryDate: '2025-01-29' },
     ],
   },
   {
@@ -99,12 +156,53 @@ export const mockEmployees: Employee[] = [
     role: 'Analista de Qualidade',
     sector: 'Qualidade',
     admissionDate: '2021-09-01',
-    goals: [
-      { id: 'g1', name: 'Auditorias', weight: 40, achieved: 95 },
-      { id: 'g2', name: 'NC Resolvidas', weight: 35, achieved: 88 },
-      { id: 'g3', name: 'Documentação ISO', weight: 25, achieved: 100 },
+    referenceMonth: currentMonth,
+    status: 'active',
+    performanceBonus: 1,
+    macroGoals: [
+      { id: 'mg1', name: 'Auditorias Internas', description: 'Realizar 4 auditorias', weight: 40, achieved: 95, deadline: '2025-01-31', deliveryDate: '2025-01-30' },
+      { id: 'mg2', name: 'NC Resolvidas', description: 'Resolver 90% das NCs', weight: 35, achieved: 88, deadline: '2025-01-25', deliveryDate: '2025-01-27' },
+      { id: 'mg3', name: 'Documentação ISO', description: 'Atualizar documentos ISO', weight: 25, achieved: 100, deadline: '2025-01-20', deliveryDate: '2025-01-19' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Inspeções', description: 'Inspeções de processo', weight: 40, achieved: 92, deadline: '2025-01-31', deliveryDate: '2025-01-31' },
+      { id: 'sg2', name: 'Treinamentos', description: 'Treinar equipes', weight: 30, achieved: 100, deadline: '2025-01-15', deliveryDate: '2025-01-14' },
+      { id: 'sg3', name: 'Indicadores', description: 'Monitorar KPIs', weight: 30, achieved: 95, deadline: '2025-01-31', deliveryDate: '2025-01-30' },
+    ],
+  },
+  {
+    id: '9',
+    name: 'Beatriz Fernandes',
+    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=face',
+    role: 'Assistente Administrativo',
+    sector: 'Administrativo',
+    admissionDate: '2023-03-01',
+    referenceMonth: currentMonth,
+    status: 'inactive',
+    performanceBonus: 0,
+    macroGoals: [
+      { id: 'mg1', name: 'Organização de Arquivos', description: 'Digitalizar arquivos', weight: 50, achieved: 60, deadline: '2025-01-31' },
+      { id: 'mg2', name: 'Atendimento', description: 'Atendimento telefônico', weight: 50, achieved: 70, deadline: '2025-01-31', deliveryDate: '2025-02-05' },
+    ],
+    sectoralGoals: [
+      { id: 'sg1', name: 'Agenda Executiva', description: 'Gerenciar agendas', weight: 100, achieved: 65, deadline: '2025-01-31', deliveryDate: '2025-02-01' },
     ],
   },
 ];
 
-export const sectors = ['Comercial', 'Financeiro', 'Recursos Humanos', 'Tecnologia', 'Marketing', 'Operações', 'Qualidade'];
+export const sectors = ['Comercial', 'Financeiro', 'Recursos Humanos', 'Tecnologia', 'Marketing', 'Operações', 'Qualidade', 'Administrativo'];
+
+export const months = [
+  { value: '01', label: 'Janeiro' },
+  { value: '02', label: 'Fevereiro' },
+  { value: '03', label: 'Março' },
+  { value: '04', label: 'Abril' },
+  { value: '05', label: 'Maio' },
+  { value: '06', label: 'Junho' },
+  { value: '07', label: 'Julho' },
+  { value: '08', label: 'Agosto' },
+  { value: '09', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+];

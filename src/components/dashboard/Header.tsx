@@ -1,16 +1,12 @@
 import { Calendar, Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { months } from '@/data/mockEmployees';
 
 interface HeaderProps {
   selectedMonth: string;
   onMonthChange: (month: string) => void;
   totalEmployees: number;
 }
-
-const months = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
 
 export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderProps) {
   return (
@@ -21,26 +17,27 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
             GRUPO JVM
           </h1>
           <p className="text-primary-foreground/80 mt-1">
-            Painel de Desempenho de Colaboradores
+            Painel de Gestão de Metas e Desempenho
           </p>
         </div>
         
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-lg">
             <Users className="w-5 h-5" />
-            <span className="font-medium">{totalEmployees} colaboradores</span>
+            <span className="font-medium">{totalEmployees} colaboradores ativos</span>
           </div>
           
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             <Select value={selectedMonth} onValueChange={onMonthChange}>
               <SelectTrigger className="w-[140px] bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground">
-                <SelectValue />
+                <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Todos os meses</SelectItem>
                 {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
                   </SelectItem>
                 ))}
               </SelectContent>

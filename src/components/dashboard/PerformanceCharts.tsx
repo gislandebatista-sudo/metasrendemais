@@ -1,7 +1,7 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, RadialBarChart, RadialBar } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, PieChartIcon, BarChart3, Activity, Building2 } from 'lucide-react';
-import { Employee, calculateTotalPerformance } from '@/types/employee';
+import { Employee, calculateTotalPerformance, getGoalStatus } from '@/types/employee';
 
 interface PerformanceChartsProps {
   employees: Employee[];
@@ -17,12 +17,15 @@ const COLORS = {
 };
 
 export function PerformanceCharts({ employees }: PerformanceChartsProps) {
+  const activeEmployees = employees.filter(emp => emp.status === 'active');
+  
   // Calculate data for charts
-  const employeePerformances = employees.map(emp => ({
+  const employeePerformances = activeEmployees.map(emp => ({
     name: emp.name.split(' ').slice(0, 2).join(' '),
     fullName: emp.name,
-    performance: calculateTotalPerformance(emp.goals),
+    performance: calculateTotalPerformance(emp),
     sector: emp.sector,
+    bonus: emp.performanceBonus,
   })).sort((a, b) => b.performance - a.performance);
 
   // Distribution data
@@ -37,7 +40,16 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
     { name: 'Abaixo de 80%', value: distribution.low, color: COLORS.low },
     { name: '80% - 99%', value: distribution.medium, color: COLORS.medium },
     { name: '100% - 104%', value: distribution.high, color: COLORS.high },
-    { name: '105%', value: distribution.excellent, color: COLORS.excellent },
+    { name: '105%+', value: distribution.excellent, color: COLORS.excellent },
+  ].filter(d => d.value > 0);
+
+  // Goal status distribution
+  const allGoals = activeEmployees.flatMap(emp => [...emp.macroGoals, ...emp.sectoralGoals]);
+  const goalStatusData = [
+    { name: 'Antes do Prazo', value: allGoals.filter(g => getGoalStatus(g.deadline, g.deliveryDate) === 'early').length, color: COLORS.excellent },
+    { name: 'No Prazo', value: allGoals.filter(g => getGoalStatus(g.deadline, g.deliveryDate) === 'on_time').length, color: COLORS.high },
+    { name: 'Com Atraso', value: allGoals.filter(g => getGoalStatus(g.deadline, g.deliveryDate) === 'late').length, color: COLORS.low },
+    { name: 'Não Entregue', value: allGoals.filter(g => getGoalStatus(g.deadline, g.deliveryDate) === 'not_delivered').length, color: COLORS.medium },
   ].filter(d => d.value > 0);
 
   // Sector averages
@@ -79,7 +91,7 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
-            Desempenho Individual
+            Top 6 - Desempenho Individual
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -138,11 +150,75 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
         </CardContent>
       </Card>
 
-      {/* Monthly Evolution */}
+      {/* Goal Status Distribution */}
       <Card className="shadow-md">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Activity className="w-4 h-4 text-primary" />
+            Status de Entregas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px] flex items-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={goalStatusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}`}
+                  labelLine={false}
+                >
+                  {goalStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => [`${value} metas`, 'Quantidade']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sector Averages */}
+      <Card className="shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-primary" />
+            Média por Setor
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sectorData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="sector" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                <YAxis domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
+                <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Média']} />
+                <Bar 
+                  dataKey="average" 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {sectorData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Monthly Evolution */}
+      <Card className="shadow-md">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
             Evolução Mensal
           </CardTitle>
         </CardHeader>
@@ -177,51 +253,21 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
         </CardContent>
       </Card>
 
-      {/* Sector Averages */}
+      {/* Top Performers vs Max */}
       <Card className="shadow-md">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-primary" />
-            Média por Setor
+            <BarChart3 className="w-4 h-4 text-primary" />
+            Top 5 vs Meta Máxima (105%)
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sectorData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="sector" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
-                <YAxis domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Média']} />
-                <Bar 
-                  dataKey="average" 
-                  radius={[4, 4, 0, 0]}
-                >
-                  {sectorData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Performers vs Max */}
-      <Card className="shadow-md lg:col-span-2">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            Top 5 vs Meta Máxima (105%)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topPerformers} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
-                <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, '']} />
                 <Legend />
                 <Bar dataKey="atual" name="Atual" fill={COLORS.primary} radius={[0, 4, 4, 0]} />
