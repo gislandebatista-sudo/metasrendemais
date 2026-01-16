@@ -7,36 +7,76 @@ import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
 import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { mockEmployees } from '@/data/mockEmployees';
-import { Employee } from '@/types/employee';
+import { Employee, Goal, getGoalStatus, GoalStatus } from '@/types/employee';
 
 const Index = () => {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [selectedMonth, setSelectedMonth] = useState('Janeiro');
+  const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('active');
+  const [selectedGoalStatus, setSelectedGoalStatus] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>(undefined);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.role.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSector = selectedSector === 'all' || emp.sector === selectedSector;
-      return matchesSearch && matchesSector;
+      const matchesStatus = selectedStatus === 'all' || emp.status === selectedStatus;
+      const matchesMonth = selectedMonth === 'all' || emp.referenceMonth.endsWith(`-${selectedMonth}`);
+      
+      // Filter by goal status
+      let matchesGoalStatus = true;
+      if (selectedGoalStatus !== 'all') {
+        const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+        matchesGoalStatus = allGoals.some(goal => 
+          getGoalStatus(goal.deadline, goal.deliveryDate) === selectedGoalStatus
+        );
+      }
+      
+      return matchesSearch && matchesSector && matchesStatus && matchesMonth && matchesGoalStatus;
     });
-  }, [employees, searchTerm, selectedSector]);
+  }, [employees, searchTerm, selectedSector, selectedStatus, selectedMonth, selectedGoalStatus]);
 
   const handleAddEmployee = (newEmployee: Employee) => {
-    setEmployees([...employees, newEmployee]);
+    if (editingEmployee) {
+      // Update existing employee
+      setEmployees(employees.map(emp => 
+        emp.id === newEmployee.id ? newEmployee : emp
+      ));
+      if (selectedEmployee?.id === newEmployee.id) {
+        setSelectedEmployee(newEmployee);
+      }
+    } else {
+      // Add new employee
+      setEmployees([...employees, newEmployee]);
+    }
+    setEditingEmployee(undefined);
   };
 
-  const handleUpdateGoal = (employeeId: string, goalId: string, achieved: number) => {
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteEmployee = (employeeId: string) => {
+    setEmployees(employees.filter(emp => emp.id !== employeeId));
+    if (selectedEmployee?.id === employeeId) {
+      setSelectedEmployee(null);
+    }
+  };
+
+  const handleUpdateGoal = (employeeId: string, goalType: 'macro' | 'sectoral', goalId: string, updates: Partial<Goal>) => {
     setEmployees(employees.map(emp => {
       if (emp.id === employeeId) {
+        const goalsKey = goalType === 'macro' ? 'macroGoals' : 'sectoralGoals';
         return {
           ...emp,
-          goals: emp.goals.map(goal => 
-            goal.id === goalId ? { ...goal, achieved } : goal
+          [goalsKey]: emp[goalsKey].map(goal => 
+            goal.id === goalId ? { ...goal, ...updates } : goal
           ),
         };
       }
@@ -45,14 +85,22 @@ const Index = () => {
 
     // Update selected employee if it's the one being edited
     if (selectedEmployee?.id === employeeId) {
+      const goalsKey = goalType === 'macro' ? 'macroGoals' : 'sectoralGoals';
       setSelectedEmployee({
         ...selectedEmployee,
-        goals: selectedEmployee.goals.map(goal =>
-          goal.id === goalId ? { ...goal, achieved } : goal
+        [goalsKey]: selectedEmployee[goalsKey].map(goal =>
+          goal.id === goalId ? { ...goal, ...updates } : goal
         ),
       });
     }
   };
+
+  const handleOpenModal = () => {
+    setEditingEmployee(undefined);
+    setIsModalOpen(true);
+  };
+
+  const activeEmployeesCount = employees.filter(emp => emp.status === 'active').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +108,7 @@ const Index = () => {
         <Header
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
-          totalEmployees={employees.length}
+          totalEmployees={activeEmployeesCount}
         />
 
         <StatsCards employees={employees} />
@@ -70,7 +118,13 @@ const Index = () => {
           onSearchChange={setSearchTerm}
           selectedSector={selectedSector}
           onSectorChange={setSelectedSector}
-          onAddEmployee={() => setIsModalOpen(true)}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          selectedGoalStatus={selectedGoalStatus}
+          onGoalStatusChange={setSelectedGoalStatus}
+          onAddEmployee={handleOpenModal}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -87,6 +141,8 @@ const Index = () => {
                 employee={selectedEmployee}
                 onClose={() => setSelectedEmployee(null)}
                 onUpdateGoal={handleUpdateGoal}
+                onEditEmployee={handleEditEmployee}
+                onDeleteEmployee={handleDeleteEmployee}
               />
             ) : (
               <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center">
@@ -107,8 +163,12 @@ const Index = () => {
 
         <EmployeeModal
           open={isModalOpen}
-          onOpenChange={setIsModalOpen}
+          onOpenChange={(open) => {
+            setIsModalOpen(open);
+            if (!open) setEditingEmployee(undefined);
+          }}
           onSave={handleAddEmployee}
+          employee={editingEmployee}
         />
       </div>
     </div>

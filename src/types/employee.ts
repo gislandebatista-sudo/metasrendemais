@@ -1,9 +1,13 @@
+export type GoalStatus = 'early' | 'on_time' | 'late' | 'not_delivered';
+
 export interface Goal {
   id: string;
   name: string;
   description?: string;
   weight: number; // percentage 0-100
   achieved: number; // percentage 0-105
+  deadline: string; // ISO date string
+  deliveryDate?: string; // ISO date string
 }
 
 export interface Employee {
@@ -13,7 +17,11 @@ export interface Employee {
   role: string;
   sector: string;
   admissionDate?: string;
-  goals: Goal[];
+  referenceMonth: string; // Format: YYYY-MM
+  status: 'active' | 'inactive';
+  macroGoals: Goal[]; // Up to 5 goals
+  sectoralGoals: Goal[]; // Up to 10 goals
+  performanceBonus: number; // 0-5%
 }
 
 export interface MonthlyPerformance {
@@ -24,6 +32,39 @@ export interface MonthlyPerformance {
 
 export type PerformanceLevel = 'low' | 'medium' | 'high' | 'excellent';
 
+export const getGoalStatus = (deadline: string, deliveryDate?: string): GoalStatus => {
+  if (!deliveryDate) return 'not_delivered';
+  
+  const deadlineDate = new Date(deadline);
+  const delivery = new Date(deliveryDate);
+  
+  // Early: 1+ day before deadline
+  const dayBefore = new Date(deadlineDate);
+  dayBefore.setDate(dayBefore.getDate() - 1);
+  
+  if (delivery <= dayBefore) return 'early';
+  if (delivery.toDateString() === deadlineDate.toDateString()) return 'on_time';
+  return 'late';
+};
+
+export const getStatusLabel = (status: GoalStatus): string => {
+  switch (status) {
+    case 'early': return 'Entregue Antes';
+    case 'on_time': return 'No Prazo';
+    case 'late': return 'Com Atraso';
+    case 'not_delivered': return 'Não Entregue';
+  }
+};
+
+export const getStatusColor = (status: GoalStatus): string => {
+  switch (status) {
+    case 'early': return 'text-performance-excellent bg-performance-excellent/10';
+    case 'on_time': return 'text-performance-high bg-performance-high/10';
+    case 'late': return 'text-performance-low bg-performance-low/10';
+    case 'not_delivered': return 'text-muted-foreground bg-muted';
+  }
+};
+
 export const getPerformanceLevel = (percentage: number): PerformanceLevel => {
   if (percentage < 80) return 'low';
   if (percentage < 100) return 'medium';
@@ -31,11 +72,57 @@ export const getPerformanceLevel = (percentage: number): PerformanceLevel => {
   return 'excellent';
 };
 
-export const calculateTotalPerformance = (goals: Goal[]): number => {
+export const getPerformanceLevelLabel = (level: PerformanceLevel): string => {
+  switch (level) {
+    case 'low': return 'Baixo';
+    case 'medium': return 'Médio';
+    case 'high': return 'Alto';
+    case 'excellent': return 'Excelente';
+  }
+};
+
+export const calculateGoalsPerformance = (goals: Goal[]): number => {
   if (goals.length === 0) return 0;
   const total = goals.reduce((acc, goal) => {
     const cappedAchieved = Math.min(goal.achieved, 105);
     return acc + (cappedAchieved * goal.weight) / 100;
   }, 0);
   return Math.min(total, 105);
+};
+
+export const calculateTotalPerformance = (employee: Employee): number => {
+  const macroPerf = calculateGoalsPerformance(employee.macroGoals);
+  const sectoralPerf = calculateGoalsPerformance(employee.sectoralGoals);
+  
+  // If both have goals, average them. Otherwise, use whichever has goals
+  const hasMacro = employee.macroGoals.length > 0;
+  const hasSectoral = employee.sectoralGoals.length > 0;
+  
+  let basePerformance = 0;
+  if (hasMacro && hasSectoral) {
+    basePerformance = (macroPerf + sectoralPerf) / 2;
+  } else if (hasMacro) {
+    basePerformance = macroPerf;
+  } else if (hasSectoral) {
+    basePerformance = sectoralPerf;
+  }
+  
+  // Add bonus (capped at 5%)
+  const bonus = Math.min(employee.performanceBonus, 5);
+  
+  return Math.min(basePerformance + bonus, 110);
+};
+
+export const getTotalGoalsWeight = (goals: Goal[]): number => {
+  return goals.reduce((sum, goal) => sum + goal.weight, 0);
+};
+
+export const getDelayedGoalsCount = (employee: Employee): number => {
+  const allGoals = [...employee.macroGoals, ...employee.sectoralGoals];
+  return allGoals.filter(goal => getGoalStatus(goal.deadline, goal.deliveryDate) === 'late').length;
+};
+
+export const getNotDeliveredGoalsCount = (employee: Employee): number => {
+  const allGoals = [...employee.macroGoals, ...employee.sectoralGoals];
+  return allGoals.filter(goal => getGoalStatus(goal.deadline, goal.deliveryDate) === 'not_delivered').length;
 };
