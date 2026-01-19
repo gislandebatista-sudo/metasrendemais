@@ -5,7 +5,7 @@ export interface Goal {
   name: string;
   description?: string;
   weight: number; // percentage 0-100
-  achieved: number; // percentage 0-105
+  achieved: number; // percentage 0-100
   deadline: string; // ISO date string
   deliveryDate?: string; // ISO date string
 }
@@ -84,10 +84,10 @@ export const getPerformanceLevelLabel = (level: PerformanceLevel): string => {
 export const calculateGoalsPerformance = (goals: Goal[]): number => {
   if (goals.length === 0) return 0;
   const total = goals.reduce((acc, goal) => {
-    const cappedAchieved = Math.min(goal.achieved, 105);
+    const cappedAchieved = Math.min(goal.achieved, 100);
     return acc + (cappedAchieved * goal.weight) / 100;
   }, 0);
-  return Math.min(total, 105);
+  return Math.min(total, 100);
 };
 
 export const calculateTotalPerformance = (employee: Employee): number => {
@@ -107,10 +107,10 @@ export const calculateTotalPerformance = (employee: Employee): number => {
     basePerformance = sectoralPerf;
   }
   
-  // Add bonus (capped at 5%)
+  // Add bonus (capped at 5%) - only bonus can exceed 100%, max total is 105%
   const bonus = Math.min(employee.performanceBonus, 5);
   
-  return Math.min(basePerformance + bonus, 110);
+  return Math.min(basePerformance + bonus, 105);
 };
 
 export const getTotalGoalsWeight = (goals: Goal[]): number => {
