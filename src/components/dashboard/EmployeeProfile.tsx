@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { X, Briefcase, Building2, Calendar, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2 } from 'lucide-react';
+import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
 import { 
   Employee, 
   Goal, 
@@ -15,7 +18,8 @@ import {
   getPerformanceLevelLabel,
   getGoalStatus,
   getStatusLabel,
-  getStatusColor
+  getStatusColor,
+  getTotalGoalsWeight
 } from '@/types/employee';
 import { cn } from '@/lib/utils';
 
@@ -23,14 +27,21 @@ interface EmployeeProfileProps {
   employee: Employee;
   onClose: () => void;
   onUpdateGoal: (employeeId: string, goalType: 'macro' | 'sectoral', goalId: string, updates: Partial<Goal>) => void;
+  onUpdateBonus: (employeeId: string, bonus: number, description?: string) => void;
   onEditEmployee: (employee: Employee) => void;
   onDeleteEmployee: (employeeId: string) => void;
 }
 
-export function EmployeeProfile({ employee, onClose, onUpdateGoal, onEditEmployee, onDeleteEmployee }: EmployeeProfileProps) {
+export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus, onEditEmployee, onDeleteEmployee }: EmployeeProfileProps) {
+  const [editingBonus, setEditingBonus] = useState(false);
+  const [bonusValue, setBonusValue] = useState(employee.performanceBonus);
+  const [bonusDescription, setBonusDescription] = useState(employee.bonusDescription || '');
+
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
   const sectoralPerformance = calculateGoalsPerformance(employee.sectoralGoals);
+  const macroWeight = getTotalGoalsWeight(employee.macroGoals);
+  const sectoralWeight = getTotalGoalsWeight(employee.sectoralGoals);
   const level = getPerformanceLevel(totalPerformance);
 
   const getPerformanceColorClass = (level: string) => {
@@ -68,89 +79,114 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onEditEmploye
     onUpdateGoal(employee.id, goalType, goalId, { deliveryDate: value || undefined });
   };
 
-  const renderGoalsList = (goals: Goal[], type: 'macro' | 'sectoral') => (
-    <div className="space-y-4">
-      {goals.length === 0 ? (
-        <p className="text-center text-muted-foreground py-4">Nenhuma meta cadastrada</p>
-      ) : (
-        goals.map((goal) => {
-          const weightedResult = (goal.achieved * goal.weight) / 100;
-          const status = getGoalStatus(goal.deadline, goal.deliveryDate);
-          
-          return (
-            <div key={goal.id} className="bg-muted/30 rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h5 className="font-medium">{goal.name}</h5>
-                    <Badge variant="outline" className={cn("text-xs", getStatusColor(status))}>
-                      {getStatusIcon(status)}
-                      <span className="ml-1">{getStatusLabel(status)}</span>
-                    </Badge>
-                  </div>
-                  {goal.description && (
-                    <p className="text-sm text-muted-foreground">{goal.description}</p>
-                  )}
-                </div>
-                <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
-                  Peso: {goal.weight}%
-                </span>
-              </div>
+  const handleSaveBonus = () => {
+    onUpdateBonus(employee.id, bonusValue, bonusDescription);
+    setEditingBonus(false);
+  };
 
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Prazo:</span>
-                  <span className="ml-2 font-medium">{new Date(goal.deadline).toLocaleDateString('pt-BR')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Entrega:</span>
-                  <Input
-                    type="date"
-                    value={goal.deliveryDate || ''}
-                    onChange={(e) => handleDeliveryDateChange(type, goal.id, e.target.value)}
-                    className="h-7 text-sm w-36"
-                  />
-                </div>
-              </div>
+  const renderGoalsList = (goals: Goal[], type: 'macro' | 'sectoral') => {
+    const totalWeight = getTotalGoalsWeight(goals);
+    
+    return (
+      <div className="space-y-4">
+        {/* Weight Progress */}
+        <div className="p-3 bg-muted/30 rounded-lg">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-muted-foreground">Peso Total das Metas</span>
+            <span className={cn(
+              "font-medium",
+              totalWeight === 100 ? 'text-performance-high' : 
+              totalWeight > 100 ? 'text-performance-low' : 
+              'text-muted-foreground'
+            )}>
+              {totalWeight}%
+            </span>
+          </div>
+          <Progress value={Math.min(totalWeight, 100)} className="h-2" />
+        </div>
 
-              {/* Progress */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-muted-foreground">Realizado</span>
-                    <span className="font-medium">{goal.achieved}%</span>
+        {goals.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4">Nenhuma meta cadastrada</p>
+        ) : (
+          goals.map((goal) => {
+            const weightedResult = (goal.achieved * goal.weight) / 100;
+            const status = getGoalStatus(goal.deadline, goal.deliveryDate);
+            
+            return (
+              <div key={goal.id} className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h5 className="font-medium">{goal.name}</h5>
+                      <Badge variant="outline" className={cn("text-xs", getStatusColor(status))}>
+                        {getStatusIcon(status)}
+                        <span className="ml-1">{getStatusLabel(status)}</span>
+                      </Badge>
+                    </div>
+                    {goal.description && (
+                      <p className="text-sm text-muted-foreground">{goal.description}</p>
+                    )}
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn("h-full transition-all", getProgressColor(goal.achieved))}
-                      style={{ width: `${Math.min(100, (goal.achieved / 105) * 100)}%` }}
+                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                    Peso: {goal.weight}%
+                  </span>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Prazo:</span>
+                    <span className="ml-2 font-medium">{new Date(goal.deadline).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Entrega:</span>
+                    <Input
+                      type="date"
+                      value={goal.deliveryDate || ''}
+                      onChange={(e) => handleDeliveryDateChange(type, goal.id, e.target.value)}
+                      className="h-7 text-sm w-36"
                     />
                   </div>
                 </div>
-                
-                <div className="w-20">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="105"
-                    value={goal.achieved}
-                    onChange={(e) => handleAchievedChange(type, goal.id, e.target.value)}
-                    className="text-center font-medium h-8"
-                  />
+
+                {/* Progress */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-muted-foreground">Realizado</span>
+                      <span className="font-medium">{goal.achieved}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn("h-full transition-all", getProgressColor(goal.achieved))}
+                        style={{ width: `${Math.min(100, (goal.achieved / 105) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="w-20">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="105"
+                      value={goal.achieved}
+                      onChange={(e) => handleAchievedChange(type, goal.id, e.target.value)}
+                      className="text-center font-medium h-8"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Resultado Ponderado</span>
+                  <span className="font-semibold text-primary">{weightedResult.toFixed(1)}%</span>
                 </div>
               </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Resultado Ponderado</span>
-                <span className="font-semibold text-primary">{weightedResult.toFixed(1)}%</span>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   return (
     <Card className="shadow-lg border-t-4 border-t-primary">
@@ -207,12 +243,6 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onEditEmploye
                 <Building2 className="w-4 h-4" />
                 {employee.sector}
               </span>
-              {employee.admissionDate && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  {new Date(employee.admissionDate).toLocaleDateString('pt-BR')}
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -241,7 +271,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onEditEmploye
               </div>
               <span className="text-2xl font-bold text-primary">{macroPerformance.toFixed(1)}%</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{employee.macroGoals.length} metas</p>
+            <p className="text-sm text-muted-foreground mt-1">{employee.macroGoals.length} metas ({macroWeight}% peso)</p>
           </div>
 
           <div className="p-4 rounded-xl bg-accent/10 border border-accent/20">
@@ -252,18 +282,76 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onEditEmploye
               </div>
               <span className="text-2xl font-bold">{sectoralPerformance.toFixed(1)}%</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{employee.sectoralGoals.length} metas</p>
+            <p className="text-sm text-muted-foreground mt-1">{employee.sectoralGoals.length} metas ({sectoralWeight}% peso)</p>
           </div>
         </div>
 
-        {/* Bonus */}
-        {employee.performanceBonus > 0 && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
-            <Gift className="w-5 h-5 text-accent" />
-            <span className="font-medium">Bônus de Performance:</span>
-            <span className="text-lg font-bold text-accent">+{employee.performanceBonus}%</span>
+        {/* Bonus Section - Separated Bar */}
+        <div className="p-4 rounded-xl border-2 border-dashed border-accent/50 bg-accent/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Gift className="w-5 h-5 text-accent" />
+              <span className="font-semibold">Bônus de Performance</span>
+            </div>
+            {!editingBonus ? (
+              <Button variant="ghost" size="sm" onClick={() => setEditingBonus(true)}>
+                <Pencil className="w-4 h-4 mr-1" />
+                Editar
+              </Button>
+            ) : (
+              <Button variant="default" size="sm" onClick={handleSaveBonus}>
+                <Save className="w-4 h-4 mr-1" />
+                Salvar
+              </Button>
+            )}
           </div>
-        )}
+          
+          {editingBonus ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Label className="text-sm shrink-0">Percentual:</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.5"
+                  value={bonusValue}
+                  onChange={(e) => setBonusValue(Math.min(5, parseFloat(e.target.value) || 0))}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">% (máx. 5%)</span>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">Descrição/Motivo:</Label>
+                <Textarea
+                  value={bonusDescription}
+                  onChange={(e) => setBonusDescription(e.target.value)}
+                  placeholder="Descreva o motivo do bônus..."
+                  className="min-h-[80px] resize-none"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-accent">+{employee.performanceBonus}%</span>
+                <div className="flex-1">
+                  <Progress value={employee.performanceBonus * 20} className="h-3 [&>div]:bg-accent" />
+                </div>
+              </div>
+              {employee.bonusDescription && (
+                <p className="text-sm text-muted-foreground bg-background/50 p-2 rounded">
+                  <strong>Motivo:</strong> {employee.bonusDescription}
+                </p>
+              )}
+              {!employee.bonusDescription && employee.performanceBonus === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  Nenhum bônus cadastrado. Clique em "Editar" para adicionar.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Goals Tabs */}
         <Tabs defaultValue="macro" className="w-full">
