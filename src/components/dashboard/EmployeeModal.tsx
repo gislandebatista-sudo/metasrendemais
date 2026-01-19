@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar, Upload, AlertTriangle, Image } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { Employee, Goal, getTotalGoalsWeight } from '@/types/employee';
 import { sectors, months } from '@/data/mockEmployees';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface EmployeeModalProps {
   open: boolean;
@@ -21,17 +25,18 @@ const currentYear = new Date().getFullYear();
 const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
 
 export function EmployeeModal({ open, onOpenChange, onSave, employee }: EmployeeModalProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Partial<Employee>>({
     name: '',
     photo: '',
     role: '',
     sector: '',
-    admissionDate: '',
     referenceMonth: `${currentYear}-${currentMonth}`,
     status: 'active',
     macroGoals: [],
     sectoralGoals: [],
     performanceBonus: 0,
+    bonusDescription: '',
   });
 
   useEffect(() => {
@@ -43,12 +48,12 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
         photo: '',
         role: '',
         sector: '',
-        admissionDate: '',
         referenceMonth: `${currentYear}-${currentMonth}`,
         status: 'active',
         macroGoals: [],
         sectoralGoals: [],
         performanceBonus: 0,
+        bonusDescription: '',
       });
     }
   }, [employee, open]);
@@ -71,11 +76,48 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
     deliveryDate: '',
   });
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is JPG
+    if (!file.type.includes('jpeg') && !file.name.toLowerCase().endsWith('.jpg') && !file.name.toLowerCase().endsWith('.jpeg')) {
+      toast.error('Formato inválido', {
+        description: 'Por favor, envie uma imagem no formato JPG.',
+      });
+      return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande', {
+        description: 'O tamanho máximo permitido é 5MB.',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setFormData({ ...formData, photo: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddGoal = (type: 'macro' | 'sectoral') => {
     const goalData = type === 'macro' ? newMacroGoal : newSectoralGoal;
     const goalsKey = type === 'macro' ? 'macroGoals' : 'sectoralGoals';
     const currentGoals = formData[goalsKey] || [];
     const maxGoals = type === 'macro' ? 5 : 10;
+    const currentWeight = getTotalGoalsWeight(currentGoals);
+    const newTotalWeight = currentWeight + (goalData.weight || 0);
+
+    if (newTotalWeight > 100) {
+      toast.error('Peso total excede 100%', {
+        description: `Peso máximo disponível: ${100 - currentWeight}%`,
+      });
+      return;
+    }
 
     if (goalData.name && goalData.weight && goalData.deadline && currentGoals.length < maxGoals) {
       const goal: Goal = {
@@ -116,12 +158,12 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
         photo: formData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=1e3a5f&color=fff&size=150`,
         role: formData.role,
         sector: formData.sector,
-        admissionDate: formData.admissionDate,
         referenceMonth: formData.referenceMonth || `${currentYear}-${currentMonth}`,
         status: formData.status || 'active',
         macroGoals: formData.macroGoals || [],
         sectoralGoals: formData.sectoralGoals || [],
         performanceBonus: formData.performanceBonus || 0,
+        bonusDescription: formData.bonusDescription || '',
       };
       onSave(employeeData);
       onOpenChange(false);
@@ -140,17 +182,46 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
     const maxGoals = type === 'macro' ? 5 : 10;
     const totalWeight = type === 'macro' ? macroWeight : sectoralWeight;
     const canAdd = (goals?.length || 0) < maxGoals;
+    const remainingWeight = 100 - totalWeight;
+    const isWeightExceeded = totalWeight > 100;
 
     return (
       <div className="space-y-4">
-        {/* Weight indicator */}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {goals?.length || 0}/{maxGoals} metas
-          </span>
-          <span className={`font-medium ${totalWeight === 100 ? 'text-performance-high' : totalWeight > 100 ? 'text-performance-low' : 'text-muted-foreground'}`}>
-            Peso Total: {totalWeight}%
-          </span>
+        {/* Weight Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              {goals?.length || 0}/{maxGoals} metas
+            </span>
+            <span className={cn(
+              "font-medium",
+              totalWeight === 100 ? 'text-performance-high' : 
+              isWeightExceeded ? 'text-performance-low' : 
+              'text-muted-foreground'
+            )}>
+              Peso Total: {totalWeight}%
+            </span>
+          </div>
+          <div className="relative">
+            <Progress 
+              value={Math.min(totalWeight, 100)} 
+              className={cn(
+                "h-3",
+                isWeightExceeded && "[&>div]:bg-performance-low"
+              )}
+            />
+            {isWeightExceeded && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-performance-low">
+                <AlertTriangle className="w-3 h-3" />
+                O peso total ultrapassa 100%. Remova metas ou ajuste os pesos.
+              </div>
+            )}
+          </div>
+          {!isWeightExceeded && totalWeight < 100 && (
+            <p className="text-xs text-muted-foreground">
+              Peso disponível: {remainingWeight}%
+            </p>
+          )}
         </div>
 
         {/* Existing Goals */}
@@ -193,11 +264,14 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
               />
               <Input
                 type="number"
-                placeholder="Peso %"
+                placeholder={`Peso % (max: ${remainingWeight}%)`}
                 min="0"
-                max="100"
+                max={remainingWeight}
                 value={goalData.weight || ''}
-                onChange={(e) => setGoalData({ ...goalData, weight: parseInt(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  setGoalData({ ...goalData, weight: Math.min(value, remainingWeight) });
+                }}
               />
             </div>
 
@@ -277,13 +351,41 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="photo">URL da Foto</Label>
-              <Input
-                id="photo"
-                value={formData.photo || ''}
-                onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label>Foto do Colaborador (JPG)</Label>
+              <div className="flex items-center gap-3">
+                {formData.photo ? (
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-primary/20">
+                    <img 
+                      src={formData.photo} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <Image className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,image/jpeg"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload JPG
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -313,16 +415,6 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="admissionDate">Data de Admissão</Label>
-              <Input
-                id="admissionDate"
-                type="date"
-                value={formData.admissionDate || ''}
-                onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
-              />
             </div>
 
             <div className="space-y-2">
@@ -362,22 +454,6 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bonus" className="flex items-center gap-2">
-                <Gift className="w-4 h-4" />
-                Bônus Extra (até 5%)
-              </Label>
-              <Input
-                id="bonus"
-                type="number"
-                min="0"
-                max="5"
-                step="0.5"
-                value={formData.performanceBonus || 0}
-                onChange={(e) => setFormData({ ...formData, performanceBonus: Math.min(5, parseFloat(e.target.value) || 0) })}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label>Status</Label>
               <div className="flex items-center gap-3 h-10">
                 <Switch
@@ -387,6 +463,47 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
                 <span className={formData.status === 'active' ? 'text-performance-high' : 'text-muted-foreground'}>
                   {formData.status === 'active' ? 'Ativo' : 'Inativo'}
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bonus Section - Separated */}
+          <div className="p-4 border rounded-lg bg-accent/5 space-y-4">
+            <div className="flex items-center gap-2 text-accent-foreground">
+              <Gift className="w-5 h-5" />
+              <Label className="text-base font-semibold">Bônus de Performance</Label>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm">Percentual (até 5%)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={formData.performanceBonus || 0}
+                    onChange={(e) => setFormData({ ...formData, performanceBonus: Math.min(5, parseFloat(e.target.value) || 0) })}
+                    className="w-24"
+                  />
+                  <div className="flex-1">
+                    <Progress value={(formData.performanceBonus || 0) * 20} className="h-2" />
+                  </div>
+                  <span className="text-sm font-medium text-accent-foreground w-12">
+                    {formData.performanceBonus || 0}%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm">Descrição/Motivo do Bônus</Label>
+                <Textarea
+                  placeholder="Ex: Superou metas de vendas por 3 meses consecutivos..."
+                  value={formData.bonusDescription || ''}
+                  onChange={(e) => setFormData({ ...formData, bonusDescription: e.target.value })}
+                  className="min-h-[60px] resize-none"
+                />
               </div>
             </div>
           </div>

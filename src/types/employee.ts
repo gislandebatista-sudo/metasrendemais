@@ -16,12 +16,12 @@ export interface Employee {
   photo: string;
   role: string;
   sector: string;
-  admissionDate?: string;
   referenceMonth: string; // Format: YYYY-MM
   status: 'active' | 'inactive';
   macroGoals: Goal[]; // Up to 5 goals
   sectoralGoals: Goal[]; // Up to 10 goals
   performanceBonus: number; // 0-5%
+  bonusDescription?: string; // Description/reason for bonus
 }
 
 export interface MonthlyPerformance {
