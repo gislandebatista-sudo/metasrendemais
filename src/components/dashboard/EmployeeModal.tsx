@@ -302,14 +302,19 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">% Realizado</Label>
+                <Label className="text-xs">% Realizado (máx. 100%)</Label>
                 <Input
                   type="number"
-                  placeholder="0-105"
+                  placeholder="0-100"
                   min="0"
-                  max="105"
+                  max="100"
+                  step="0.1"
                   value={goalData.achieved || ''}
-                  onChange={(e) => setGoalData({ ...goalData, achieved: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const value = Math.min(100, parseFloat(e.target.value) || 0);
+                    const rounded = Math.round(value * 10) / 10;
+                    setGoalData({ ...goalData, achieved: rounded });
+                  }}
                 />
               </div>
               <Button 

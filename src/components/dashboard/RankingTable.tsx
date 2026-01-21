@@ -11,8 +11,8 @@ interface RankingTableProps {
 }
 
 export function RankingTable({ employees, onSelectEmployee }: RankingTableProps) {
+  // Show ALL employees, sorted by performance (no filtering by status for display)
   const rankedEmployees = [...employees]
-    .filter(emp => emp.status === 'active')
     .map(emp => ({
       ...emp,
       totalPerformance: calculateTotalPerformance(emp)
@@ -75,6 +75,7 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
             const isTopThree = index < 3;
             const isTopTen = index < 10;
             const isAbove100 = employee.totalPerformance >= 100;
+            const isInactive = employee.status === 'inactive';
 
             return (
               <button
@@ -82,8 +83,9 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
                 onClick={() => onSelectEmployee(employee)}
                 className={cn(
                   "w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors text-left",
-                  isTopThree && "bg-accent/5",
-                  !isTopThree && isTopTen && "bg-primary/5"
+                  isTopThree && "bg-accent/10 border-l-4 border-l-accent",
+                  !isTopThree && isTopTen && "bg-primary/5 border-l-4 border-l-primary/30",
+                  isInactive && "opacity-60"
                 )}
               >
                 <div className={cn(
@@ -107,6 +109,11 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
                     {isAbove100 && (
                       <Badge variant="outline" className="text-xs bg-performance-excellent/10 text-performance-excellent border-performance-excellent/30">
                         +100%
+                      </Badge>
+                    )}
+                    {isInactive && (
+                      <Badge variant="secondary" className="text-xs">
+                        Inativo
                       </Badge>
                     )}
                   </div>
