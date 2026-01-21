@@ -6,10 +6,11 @@ import { RankingTable } from '@/components/dashboard/RankingTable';
 import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
 import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
+import { ExportTab } from '@/components/dashboard/ExportTab';
 import { mockEmployees } from '@/data/mockEmployees';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BarChart3, Save, Check } from 'lucide-react';
+import { Users, BarChart3, Save, Check, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -170,7 +171,7 @@ const Index = () => {
         )}
 
         <Tabs defaultValue="employees" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-6">
             <TabsTrigger value="employees" className="gap-2">
               <Users className="w-4 h-4" />
               Colaboradores
@@ -178,6 +179,10 @@ const Index = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboards
+            </TabsTrigger>
+            <TabsTrigger value="export" className="gap-2">
+              <Download className="w-4 h-4" />
+              Exportar
             </TabsTrigger>
           </TabsList>
 
@@ -236,6 +241,10 @@ const Index = () => {
           <TabsContent value="analytics" className="space-y-6">
             <StatsCards employees={employees} />
             <PerformanceCharts employees={employees} />
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-6">
+            <ExportTab employees={employees} />
           </TabsContent>
         </Tabs>
 
