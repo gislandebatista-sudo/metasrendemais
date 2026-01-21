@@ -1,4 +1,4 @@
-import { Calendar, Users } from 'lucide-react';
+import { Calendar, Users, TrendingUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { months } from '@/data/mockEmployees';
 
@@ -12,13 +12,18 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
   return (
     <header className="gradient-primary text-primary-foreground p-6 rounded-2xl mb-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            GRUPO JVM
-          </h1>
-          <p className="text-primary-foreground/80 mt-1">
-            Painel de Gestão de Metas e Desempenho
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-primary-foreground/20 rounded-xl flex items-center justify-center">
+            <TrendingUp className="w-8 h-8" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Rende +
+            </h1>
+            <p className="text-primary-foreground/80 mt-1">
+              Sistema de Gestão de Metas e Desempenho
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">

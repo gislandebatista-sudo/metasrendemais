@@ -71,8 +71,10 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   };
 
   const handleAchievedChange = (goalType: 'macro' | 'sectoral', goalId: string, value: string) => {
-    const numValue = Math.min(105, Math.max(0, parseFloat(value) || 0));
-    onUpdateGoal(employee.id, goalType, goalId, { achieved: numValue });
+    // Cap at 100%, allow 0.1% increments
+    const numValue = Math.min(100, Math.max(0, parseFloat(value) || 0));
+    const roundedValue = Math.round(numValue * 10) / 10; // Round to 0.1
+    onUpdateGoal(employee.id, goalType, goalId, { achieved: roundedValue });
   };
 
   const handleDeliveryDateChange = (goalType: 'macro' | 'sectoral', goalId: string, value: string) => {
@@ -154,21 +156,22 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Realizado</span>
-                      <span className="font-medium">{goal.achieved}%</span>
+                      <span className="font-medium">{goal.achieved.toFixed(1)}%</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div 
                         className={cn("h-full transition-all", getProgressColor(goal.achieved))}
-                        style={{ width: `${Math.min(100, (goal.achieved / 105) * 100)}%` }}
+                        style={{ width: `${Math.min(100, goal.achieved)}%` }}
                       />
                     </div>
                   </div>
                   
-                  <div className="w-20">
+                  <div className="w-24">
                     <Input
                       type="number"
                       min="0"
-                      max="105"
+                      max="100"
+                      step="0.1"
                       value={goal.achieved}
                       onChange={(e) => handleAchievedChange(type, goal.id, e.target.value)}
                       className="text-center font-medium h-8"
