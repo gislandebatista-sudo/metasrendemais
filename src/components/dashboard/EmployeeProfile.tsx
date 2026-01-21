@@ -20,7 +20,8 @@ import {
   getGoalStatus,
   getStatusLabel,
   getStatusColor,
-  getTotalGoalsWeight
+  getTotalGoalsWeight,
+  getUnifiedTotalWeight
 } from '@/types/employee';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   const sectoralPerformance = calculateGoalsPerformance(employee.sectoralGoals);
   const macroWeight = getTotalGoalsWeight(employee.macroGoals);
   const sectoralWeight = getTotalGoalsWeight(employee.sectoralGoals);
+  const unifiedWeight = getUnifiedTotalWeight(employee);
   const level = getPerformanceLevel(totalPerformance);
 
   const getPerformanceColorClass = (level: string) => {
@@ -72,14 +74,15 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   };
 
   const handleAchievedChange = (goalType: 'macro' | 'sectoral', goalId: string, goalWeight: number, value: string) => {
-    // Cap achieved at 100% (but max contribution to total is limited by goal weight)
-    const numValue = Math.min(100, Math.max(0, parseFloat(value) || 0));
-    const roundedValue = Math.round(numValue * 10) / 10; // Round to 0.1
+    // Cap achieved at the goal's weight (not 100%)
+    const numValue = Math.max(0, parseFloat(value) || 0);
+    const cappedValue = Math.min(numValue, goalWeight);
+    const roundedValue = Math.round(cappedValue * 10) / 10; // Round to 0.1
     
-    // Warn if trying to exceed 100%
-    if (parseFloat(value) > 100) {
-      toast.warning('O percentual realizado foi limitado a 100%', {
-        description: `A contribuição máxima desta meta para o total é de ${goalWeight}%`,
+    // Warn if trying to exceed the goal's weight limit
+    if (numValue > goalWeight) {
+      toast.warning(`O percentual realizado foi limitado a ${goalWeight}%`, {
+        description: `Esta meta tem peso máximo de ${goalWeight}%. O valor foi ajustado automaticamente.`,
       });
     }
     
@@ -96,31 +99,24 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   };
 
   const renderGoalsList = (goals: Goal[], type: 'macro' | 'sectoral') => {
-    const totalWeight = getTotalGoalsWeight(goals);
+    const categoryWeight = getTotalGoalsWeight(goals);
     
     return (
       <div className="space-y-4">
-        {/* Weight Progress */}
+        {/* Category Weight Info */}
         <div className="p-3 bg-muted/30 rounded-lg">
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-muted-foreground">Peso Total das Metas</span>
-            <span className={cn(
-              "font-medium",
-              totalWeight === 100 ? 'text-performance-high' : 
-              totalWeight > 100 ? 'text-performance-low' : 
-              'text-muted-foreground'
-            )}>
-              {totalWeight}%
-            </span>
+            <span className="text-muted-foreground">Peso desta categoria</span>
+            <span className="font-medium">{categoryWeight}%</span>
           </div>
-          <Progress value={Math.min(totalWeight, 100)} className="h-2" />
+          <Progress value={Math.min(categoryWeight, 100)} className="h-2" />
         </div>
 
         {goals.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">Nenhuma meta cadastrada</p>
         ) : (
           goals.map((goal) => {
-            const weightedResult = (goal.achieved * goal.weight) / 100;
+            // The achieved value is the direct contribution (capped at goal weight)
             const status = getGoalStatus(goal.deadline, goal.deliveryDate);
             
             return (
@@ -160,17 +156,17 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   </div>
                 </div>
 
-                {/* Progress */}
+                {/* Progress - Achieved limited to goal weight */}
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Realizado</span>
+                      <span className="text-muted-foreground">Realizado (máx: {goal.weight}%)</span>
                       <span className="font-medium">{goal.achieved.toFixed(1)}%</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div 
-                        className={cn("h-full transition-all", getProgressColor(goal.achieved))}
-                        style={{ width: `${Math.min(100, goal.achieved)}%` }}
+                        className={cn("h-full transition-all", getProgressColor((goal.achieved / goal.weight) * 100))}
+                        style={{ width: `${Math.min(100, (goal.achieved / goal.weight) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -179,7 +175,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                     <Input
                       type="number"
                       min="0"
-                      max="100"
+                      max={goal.weight}
                       step="0.1"
                       value={goal.achieved}
                       onChange={(e) => handleAchievedChange(type, goal.id, goal.weight, e.target.value)}
@@ -188,9 +184,9 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   </div>
                 </div>
 
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Resultado Ponderado</span>
-                  <span className="font-semibold text-primary">{weightedResult.toFixed(1)}%</span>
+                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                  <span className="text-muted-foreground">Contribuição para o Ranking</span>
+                  <span className="font-semibold text-primary">{goal.achieved.toFixed(1)}%</span>
                 </div>
               </div>
             );
@@ -259,6 +255,32 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
           </div>
         </div>
 
+        {/* Unified Total Weight */}
+        <div className={cn(
+          "p-3 rounded-lg border-2",
+          unifiedWeight === 100 ? "border-performance-high bg-performance-high/10" :
+          unifiedWeight > 100 ? "border-performance-low bg-performance-low/10" :
+          "border-muted bg-muted/30"
+        )}>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Peso Total das Metas (Macro + Setoriais)</span>
+            <span className={cn(
+              "text-lg font-bold",
+              unifiedWeight === 100 ? "text-performance-high" :
+              unifiedWeight > 100 ? "text-performance-low" :
+              "text-muted-foreground"
+            )}>
+              {unifiedWeight}%
+            </span>
+          </div>
+          <Progress value={Math.min(unifiedWeight, 100)} className="h-2 mt-2" />
+          {unifiedWeight !== 100 && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {unifiedWeight > 100 ? "⚠️ O peso total excede 100%" : `Faltam ${100 - unifiedWeight}% para completar`}
+            </p>
+          )}
+        </div>
+
         {/* Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={cn(
@@ -268,18 +290,18 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                <span className="font-medium">Total</span>
+                <span className="font-medium">Total Ranking</span>
               </div>
               <span className="text-2xl font-bold">{totalPerformance.toFixed(1)}%</span>
             </div>
-            <p className="text-sm opacity-80 mt-1">{getPerformanceLevelLabel(level)}</p>
+            <p className="text-sm opacity-80 mt-1">{getPerformanceLevelLabel(level)} (Metas + Bônus)</p>
           </div>
 
           <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-primary">
                 <Target className="w-5 h-5" />
-                <span className="font-medium">Macro</span>
+                <span className="font-medium">Metas Macro</span>
               </div>
               <span className="text-2xl font-bold text-primary">{macroPerformance.toFixed(1)}%</span>
             </div>
@@ -290,7 +312,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-accent-foreground">
                 <Briefcase className="w-5 h-5" />
-                <span className="font-medium">Setoriais</span>
+                <span className="font-medium">Metas Setoriais</span>
               </div>
               <span className="text-2xl font-bold">{sectoralPerformance.toFixed(1)}%</span>
             </div>

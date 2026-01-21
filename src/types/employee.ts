@@ -81,41 +81,41 @@ export const getPerformanceLevelLabel = (level: PerformanceLevel): string => {
   }
 };
 
+// Calculate direct sum of achieved percentages for a set of goals
+// Each goal's achieved is capped at its weight (e.g., weight=30% → max achieved=30%)
 export const calculateGoalsPerformance = (goals: Goal[]): number => {
   if (goals.length === 0) return 0;
-  // Each goal's achieved is capped by its own weight (e.g., if weight=50%, max achieved contribution = 50%)
+  // Direct sum: each goal contributes its achieved%, but capped at its weight
   const total = goals.reduce((acc, goal) => {
-    // Cap achieved at 100% of the goal, then calculate weighted contribution
-    const cappedAchieved = Math.min(goal.achieved, 100);
-    // The contribution of this goal is (achieved% of goal) * (weight% of total)
-    // But the max contribution is limited to the goal's weight
-    const contribution = (cappedAchieved * goal.weight) / 100;
-    return acc + Math.min(contribution, goal.weight);
+    // Achieved cannot exceed the goal's weight
+    const cappedAchieved = Math.min(goal.achieved, goal.weight);
+    return acc + cappedAchieved;
   }, 0);
-  return Math.min(total, 100);
+  return total;
 };
 
+// Calculate total performance using DIRECT SUM (not averages)
+// Total = Macro Goals achieved + Sectoral Goals achieved + Bonus
+// Maximum: 100% (goals) + 5% (bonus) = 105%
 export const calculateTotalPerformance = (employee: Employee): number => {
-  const macroPerf = calculateGoalsPerformance(employee.macroGoals);
-  const sectoralPerf = calculateGoalsPerformance(employee.sectoralGoals);
+  // Direct sum of all goals achieved (each capped at its weight)
+  const macroSum = calculateGoalsPerformance(employee.macroGoals);
+  const sectoralSum = calculateGoalsPerformance(employee.sectoralGoals);
   
-  // If both have goals, average them. Otherwise, use whichever has goals
-  const hasMacro = employee.macroGoals.length > 0;
-  const hasSectoral = employee.sectoralGoals.length > 0;
-  
-  let basePerformance = 0;
-  if (hasMacro && hasSectoral) {
-    basePerformance = (macroPerf + sectoralPerf) / 2;
-  } else if (hasMacro) {
-    basePerformance = macroPerf;
-  } else if (hasSectoral) {
-    basePerformance = sectoralPerf;
-  }
+  // Total from goals is the sum (should equal 100% max if weights are set correctly)
+  const goalsTotal = macroSum + sectoralSum;
   
   // Add bonus (capped at 5%) - only bonus can exceed 100%, max total is 105%
   const bonus = Math.min(employee.performanceBonus, 5);
   
-  return Math.min(basePerformance + bonus, 105);
+  return Math.min(goalsTotal + bonus, 105);
+};
+
+// Get unified total weight across all goals (Macro + Sectoral)
+export const getUnifiedTotalWeight = (employee: Employee): number => {
+  const macroWeight = getTotalGoalsWeight(employee.macroGoals);
+  const sectoralWeight = getTotalGoalsWeight(employee.sectoralGoals);
+  return macroWeight + sectoralWeight;
 };
 
 export const getTotalGoalsWeight = (goals: Goal[]): number => {
