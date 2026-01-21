@@ -83,9 +83,14 @@ export const getPerformanceLevelLabel = (level: PerformanceLevel): string => {
 
 export const calculateGoalsPerformance = (goals: Goal[]): number => {
   if (goals.length === 0) return 0;
+  // Each goal's achieved is capped by its own weight (e.g., if weight=50%, max achieved contribution = 50%)
   const total = goals.reduce((acc, goal) => {
+    // Cap achieved at 100% of the goal, then calculate weighted contribution
     const cappedAchieved = Math.min(goal.achieved, 100);
-    return acc + (cappedAchieved * goal.weight) / 100;
+    // The contribution of this goal is (achieved% of goal) * (weight% of total)
+    // But the max contribution is limited to the goal's weight
+    const contribution = (cappedAchieved * goal.weight) / 100;
+    return acc + Math.min(contribution, goal.weight);
   }, 0);
   return Math.min(total, 100);
 };

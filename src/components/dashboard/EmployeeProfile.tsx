@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
@@ -70,10 +71,18 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     }
   };
 
-  const handleAchievedChange = (goalType: 'macro' | 'sectoral', goalId: string, value: string) => {
-    // Cap at 100%, allow 0.1% increments
+  const handleAchievedChange = (goalType: 'macro' | 'sectoral', goalId: string, goalWeight: number, value: string) => {
+    // Cap achieved at 100% (but max contribution to total is limited by goal weight)
     const numValue = Math.min(100, Math.max(0, parseFloat(value) || 0));
     const roundedValue = Math.round(numValue * 10) / 10; // Round to 0.1
+    
+    // Warn if trying to exceed 100%
+    if (parseFloat(value) > 100) {
+      toast.warning('O percentual realizado foi limitado a 100%', {
+        description: `A contribuição máxima desta meta para o total é de ${goalWeight}%`,
+      });
+    }
+    
     onUpdateGoal(employee.id, goalType, goalId, { achieved: roundedValue });
   };
 
@@ -173,7 +182,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                       max="100"
                       step="0.1"
                       value={goal.achieved}
-                      onChange={(e) => handleAchievedChange(type, goal.id, e.target.value)}
+                      onChange={(e) => handleAchievedChange(type, goal.id, goal.weight, e.target.value)}
                       className="text-center font-medium h-8"
                     />
                   </div>
