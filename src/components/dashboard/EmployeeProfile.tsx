@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save } from 'lucide-react';
+import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +24,7 @@ import {
   getUnifiedTotalWeight
 } from '@/types/employee';
 import { cn } from '@/lib/utils';
+import { GoalObservationsModal } from './GoalObservationsModal';
 
 interface EmployeeProfileProps {
   employee: Employee;
@@ -38,6 +39,11 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   const [editingBonus, setEditingBonus] = useState(false);
   const [bonusValue, setBonusValue] = useState(employee.performanceBonus);
   const [bonusDescription, setBonusDescription] = useState(employee.bonusDescription || '');
+  const [observationsModal, setObservationsModal] = useState<{
+    open: boolean;
+    goal: Goal | null;
+    goalType: 'macro' | 'sectoral';
+  }>({ open: false, goal: null, goalType: 'macro' });
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
@@ -96,6 +102,17 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   const handleSaveBonus = () => {
     onUpdateBonus(employee.id, bonusValue, bonusDescription);
     setEditingBonus(false);
+  };
+
+  const handleOpenObservations = (goal: Goal, goalType: 'macro' | 'sectoral') => {
+    setObservationsModal({ open: true, goal, goalType });
+  };
+
+  const handleSaveObservations = (observations: string) => {
+    if (observationsModal.goal) {
+      onUpdateGoal(employee.id, observationsModal.goalType, observationsModal.goal.id, { observations });
+      toast.success('Observações salvas com sucesso!');
+    }
   };
 
   const renderGoalsList = (goals: Goal[], type: 'macro' | 'sectoral') => {
@@ -184,10 +201,36 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   </div>
                 </div>
 
-                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                {/* Contribution and Observations */}
+                <div className="flex items-center justify-between text-sm border-t pt-2 mt-2">
                   <span className="text-muted-foreground">Contribuição para o Ranking</span>
                   <span className="font-semibold text-primary">{goal.achieved.toFixed(1)}%</span>
                 </div>
+
+                {/* Observations Button */}
+                <div className="flex items-center justify-between pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenObservations(goal, type)}
+                    className="gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    {goal.observations ? 'Ver/Editar Observações' : 'Adicionar Observações'}
+                  </Button>
+                  {goal.observations && (
+                    <Badge variant="secondary" className="text-xs">
+                      Tem observações
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Preview of observations if exists */}
+                {goal.observations && (
+                  <div className="p-2 bg-background/50 rounded border text-sm text-muted-foreground">
+                    <p className="line-clamp-2">{goal.observations}</p>
+                  </div>
+                )}
               </div>
             );
           })
@@ -408,6 +451,17 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             {renderGoalsList(employee.sectoralGoals, 'sectoral')}
           </TabsContent>
         </Tabs>
+
+        {/* Observations Modal */}
+        {observationsModal.goal && (
+          <GoalObservationsModal
+            open={observationsModal.open}
+            onOpenChange={(open) => setObservationsModal({ ...observationsModal, open })}
+            goal={observationsModal.goal}
+            goalType={observationsModal.goalType}
+            onSave={handleSaveObservations}
+          />
+        )}
       </CardContent>
     </Card>
   );
