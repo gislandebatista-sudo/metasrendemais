@@ -8,6 +8,7 @@ export interface Goal {
   achieved: number; // percentage 0-100
   deadline: string; // ISO date string
   deliveryDate?: string; // ISO date string
+  observations?: string; // Observações / Justificativas
 }
 
 export interface Employee {

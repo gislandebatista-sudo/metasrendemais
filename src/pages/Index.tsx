@@ -7,10 +7,11 @@ import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
 import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
+import { EmployeesList } from '@/components/dashboard/EmployeesList';
 import { mockEmployees } from '@/data/mockEmployees';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BarChart3, Save, Check, Download } from 'lucide-react';
+import { Users, BarChart3, Save, Check, Download, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -171,9 +172,13 @@ const Index = () => {
         )}
 
         <Tabs defaultValue="employees" className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-3 mb-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
             <TabsTrigger value="employees" className="gap-2">
               <Users className="w-4 h-4" />
+              Ranking
+            </TabsTrigger>
+            <TabsTrigger value="list" className="gap-2">
+              <List className="w-4 h-4" />
               Colaboradores
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
@@ -227,6 +232,44 @@ const Index = () => {
                       <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
                       <p className="text-muted-foreground mb-2">
                         Selecione um colaborador no ranking
+                      </p>
+                      <p className="text-sm text-muted-foreground/70">
+                        para visualizar detalhes e editar metas
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* List Tab - Colaboradores Ativos com busca */}
+          <TabsContent value="list" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <EmployeesList
+                  employees={employees.filter(e => e.status === 'active')}
+                  onSelectEmployee={setSelectedEmployee}
+                  selectedEmployeeId={selectedEmployee?.id}
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                {selectedEmployee ? (
+                  <EmployeeProfile
+                    employee={selectedEmployee}
+                    onClose={() => setSelectedEmployee(null)}
+                    onUpdateGoal={handleUpdateGoal}
+                    onUpdateBonus={handleUpdateBonus}
+                    onEditEmployee={handleEditEmployee}
+                    onDeleteEmployee={handleDeleteEmployee}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[400px]">
+                    <div>
+                      <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground mb-2">
+                        Selecione um colaborador na lista
                       </p>
                       <p className="text-sm text-muted-foreground/70">
                         para visualizar detalhes e editar metas
