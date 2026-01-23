@@ -29,15 +29,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        // User has no role assigned yet
+        console.error('Error fetching role:', error);
         setUserRole('viewer');
         return;
       }
 
-      setUserRole(data?.role as UserRole || 'viewer');
+      setUserRole((data?.role as UserRole) || 'viewer');
     } catch (err) {
       console.error('Error fetching user role:', err);
       setUserRole('viewer');
