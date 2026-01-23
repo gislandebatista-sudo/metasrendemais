@@ -8,15 +8,18 @@ import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
-import { mockEmployees } from '@/data/mockEmployees';
+import { useEmployees } from '@/hooks/useEmployees';
+import { useAuth } from '@/hooks/useAuth';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BarChart3, Save, Check, Download, List } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Users, BarChart3, Download, List, Loader2, Shield, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+  const { isAdmin } = useAuth();
+  const { employees, isLoading, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useEmployees();
+  
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
@@ -25,8 +28,6 @@ const Index = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>(undefined);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
@@ -49,64 +50,44 @@ const Index = () => {
     });
   }, [employees, searchTerm, selectedSector, selectedStatus, selectedMonth, selectedGoalStatus]);
 
-  const handleSaveChanges = useCallback(async () => {
-    setIsSaving(true);
-    // Simulate save delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setHasUnsavedChanges(false);
-    setIsSaving(false);
-    toast.success('Alterações salvas com sucesso!', {
-      description: 'Todas as informações foram atualizadas.',
-      icon: <Check className="w-4 h-4" />,
-    });
-  }, []);
-
-  const handleAddEmployee = (newEmployee: Employee) => {
-    if (editingEmployee) {
-      // Update existing employee
-      setEmployees(employees.map(emp => 
-        emp.id === newEmployee.id ? newEmployee : emp
-      ));
+  const handleAddEmployee = async (newEmployee: Employee) => {
+    const success = await saveEmployee(newEmployee);
+    if (success) {
+      setEditingEmployee(undefined);
+      // Update selected employee if it was edited
       if (selectedEmployee?.id === newEmployee.id) {
         setSelectedEmployee(newEmployee);
       }
-    } else {
-      // Add new employee
-      setEmployees([...employees, newEmployee]);
     }
-    setEditingEmployee(undefined);
-    setHasUnsavedChanges(true);
   };
 
   const handleEditEmployee = (employee: Employee) => {
+    if (!isAdmin) {
+      toast.error('Sem permissão', {
+        description: 'Apenas administradores podem editar colaboradores.',
+      });
+      return;
+    }
     setEditingEmployee(employee);
     setIsModalOpen(true);
   };
 
-  const handleDeleteEmployee = (employeeId: string) => {
-    setEmployees(employees.filter(emp => emp.id !== employeeId));
-    if (selectedEmployee?.id === employeeId) {
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!isAdmin) {
+      toast.error('Sem permissão', {
+        description: 'Apenas administradores podem excluir colaboradores.',
+      });
+      return;
+    }
+    const success = await deleteEmployee(employeeId);
+    if (success && selectedEmployee?.id === employeeId) {
       setSelectedEmployee(null);
     }
-    setHasUnsavedChanges(true);
   };
 
-  const handleUpdateGoal = (employeeId: string, goalType: 'macro' | 'sectoral', goalId: string, updates: Partial<Goal>) => {
-    setEmployees(employees.map(emp => {
-      if (emp.id === employeeId) {
-        const goalsKey = goalType === 'macro' ? 'macroGoals' : 'sectoralGoals';
-        return {
-          ...emp,
-          [goalsKey]: emp[goalsKey].map(goal => 
-            goal.id === goalId ? { ...goal, ...updates } : goal
-          ),
-        };
-      }
-      return emp;
-    }));
-
-    // Update selected employee if it's the one being edited
-    if (selectedEmployee?.id === employeeId) {
+  const handleUpdateGoal = async (employeeId: string, goalType: 'macro' | 'sectoral', goalId: string, updates: Partial<Goal>) => {
+    const success = await updateGoal(employeeId, goalId, updates);
+    if (success && selectedEmployee?.id === employeeId) {
       const goalsKey = goalType === 'macro' ? 'macroGoals' : 'sectoralGoals';
       setSelectedEmployee({
         ...selectedEmployee,
@@ -115,37 +96,42 @@ const Index = () => {
         ),
       });
     }
-    setHasUnsavedChanges(true);
   };
 
-  const handleUpdateBonus = (employeeId: string, bonus: number, description?: string) => {
-    setEmployees(employees.map(emp => {
-      if (emp.id === employeeId) {
-        return {
-          ...emp,
-          performanceBonus: bonus,
-          bonusDescription: description,
-        };
-      }
-      return emp;
-    }));
-
-    if (selectedEmployee?.id === employeeId) {
+  const handleUpdateBonus = async (employeeId: string, bonus: number, description?: string) => {
+    const success = await updateBonus(employeeId, bonus, description);
+    if (success && selectedEmployee?.id === employeeId) {
       setSelectedEmployee({
         ...selectedEmployee,
         performanceBonus: bonus,
         bonusDescription: description,
       });
     }
-    setHasUnsavedChanges(true);
   };
 
   const handleOpenModal = () => {
+    if (!isAdmin) {
+      toast.error('Sem permissão', {
+        description: 'Apenas administradores podem cadastrar colaboradores.',
+      });
+      return;
+    }
     setEditingEmployee(undefined);
     setIsModalOpen(true);
   };
 
   const activeEmployeesCount = employees.filter(emp => emp.status === 'active').length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -156,20 +142,30 @@ const Index = () => {
           totalEmployees={activeEmployeesCount}
         />
 
-        {/* Save Button - Fixed position */}
-        {hasUnsavedChanges && (
-          <div className="fixed bottom-6 right-6 z-50">
-            <Button
-              onClick={handleSaveChanges}
-              disabled={isSaving}
-              size="lg"
-              className="shadow-lg gap-2"
-            >
-              <Save className="w-5 h-5" />
-              {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
-        )}
+        {/* Role Badge */}
+        <div className="mb-4 flex items-center gap-2">
+          <Badge 
+            variant={isAdmin ? 'default' : 'secondary'} 
+            className="gap-1"
+          >
+            {isAdmin ? (
+              <>
+                <Shield className="w-3 h-3" />
+                Modo Administrador
+              </>
+            ) : (
+              <>
+                <Eye className="w-3 h-3" />
+                Modo Visualização
+              </>
+            )}
+          </Badge>
+          {!isAdmin && (
+            <span className="text-sm text-muted-foreground">
+              Você pode visualizar dados, mas não pode editá-los.
+            </span>
+          )}
+        </div>
 
         <Tabs defaultValue="employees" className="w-full">
           <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
