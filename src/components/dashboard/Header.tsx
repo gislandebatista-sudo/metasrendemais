@@ -1,6 +1,7 @@
 import { Calendar, Users, TrendingUp } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { months } from '@/data/mockEmployees';
+import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
   selectedMonth: string;
@@ -48,6 +49,9 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
               </SelectContent>
             </Select>
           </div>
+
+          {/* User Menu */}
+          <UserMenu />
         </div>
       </div>
     </header>
