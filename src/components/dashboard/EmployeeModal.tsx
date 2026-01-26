@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Employee, Goal, getTotalGoalsWeight } from '@/types/employee';
-import { sectors, months } from '@/data/mockEmployees';
+import { months } from '@/data/mockEmployees';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -405,21 +405,12 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
 
             <div className="space-y-2">
               <Label htmlFor="sector">Setor *</Label>
-              <Select
+              <Input
+                id="sector"
                 value={formData.sector || ''}
-                onValueChange={(value) => setFormData({ ...formData, sector: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o setor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectors.map((sector) => (
-                    <SelectItem key={sector} value={sector}>
-                      {sector}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                placeholder="Ex: Comercial, Financeiro, TI..."
+              />
             </div>
 
             <div className="space-y-2">
