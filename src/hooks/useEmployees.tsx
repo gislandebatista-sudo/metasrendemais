@@ -14,11 +14,17 @@ export function useEmployees() {
     try {
       setIsLoading(true);
 
-      // Fetch employees
-      const { data: employeesData, error: employeesError } = await supabase
-        .from('employees')
-        .select('*')
-        .order('name');
+      // Fetch employees using secure view that hides bonus data for non-admins
+      // For admins, use the full employees table; for viewers, use secure view
+      const { data: employeesData, error: employeesError } = isAdmin
+        ? await supabase
+            .from('employees')
+            .select('*')
+            .order('name')
+        : await supabase
+            .from('employees_secure' as any)
+            .select('*')
+            .order('name');
 
       if (employeesError) throw employeesError;
 
@@ -81,7 +87,7 @@ export function useEmployees() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (user) {
