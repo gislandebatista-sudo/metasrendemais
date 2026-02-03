@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Save, Target, Calendar, AlertCircle, CheckCircle, Clock, XCircle, Upload, FileText, Trash2, Download, Eye, Loader2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MessageSquare, Save, Target, Calendar, AlertCircle, CheckCircle, Clock, XCircle, Upload, Trash2, Download, Eye, Loader2, Plus, ListTodo } from 'lucide-react';
 import { Goal, getGoalStatus, getStatusLabel, getStatusColor } from '@/types/employee';
-import { cn } from '@/lib/utils';
+import { cn, formatDateBR } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +20,14 @@ interface GoalAttachment {
   file_type: string;
   file_size: number;
   created_at: string;
+}
+
+interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  completed_at: string | null;
+  sort_order: number;
 }
 
 interface GoalObservationsModalProps {
@@ -39,7 +49,7 @@ const ALLOWED_FILE_TYPES = [
   'image/png',
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export function GoalObservationsModal({ 
   open, 
@@ -50,8 +60,11 @@ export function GoalObservationsModal({
 }: GoalObservationsModalProps) {
   const [observations, setObservations] = useState(goal.observations || '');
   const [attachments, setAttachments] = useState<GoalAttachment[]>([]);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [newChecklistItem, setNewChecklistItem] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [isLoadingChecklist, setIsLoadingChecklist] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isAdmin } = useAuth();
 
@@ -59,6 +72,7 @@ export function GoalObservationsModal({
     if (open) {
       setObservations(goal.observations || '');
       fetchAttachments();
+      fetchChecklistItems();
     }
   }, [open, goal.observations, goal.id]);
 
@@ -79,6 +93,26 @@ export function GoalObservationsModal({
       console.error('Error fetching attachments:', error);
     } finally {
       setIsLoadingAttachments(false);
+    }
+  };
+
+  const fetchChecklistItems = async () => {
+    if (!goal.id) return;
+    
+    setIsLoadingChecklist(true);
+    try {
+      const { data, error } = await supabase
+        .from('goal_checklist_items')
+        .select('*')
+        .eq('goal_id', goal.id)
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      setChecklistItems(data || []);
+    } catch (error) {
+      console.error('Error fetching checklist items:', error);
+    } finally {
+      setIsLoadingChecklist(false);
     }
   };
 
@@ -108,7 +142,7 @@ export function GoalObservationsModal({
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       toast.error('Arquivo muito grande', {
-        description: 'O tamanho máximo permitido é 10MB.',
+        description: 'O tamanho máximo permitido é 20MB.',
       });
       return;
     }
@@ -229,6 +263,77 @@ export function GoalObservationsModal({
     return '📎';
   };
 
+  // Checklist functions
+  const handleAddChecklistItem = async () => {
+    if (!newChecklistItem.trim() || !goal.id) return;
+
+    try {
+      const sortOrder = checklistItems.length;
+      const { data, error } = await supabase
+        .from('goal_checklist_items')
+        .insert({
+          goal_id: goal.id,
+          text: newChecklistItem.trim(),
+          sort_order: sortOrder,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setChecklistItems(prev => [...prev, data]);
+      setNewChecklistItem('');
+      toast.success('Tarefa adicionada!');
+    } catch (error) {
+      console.error('Error adding checklist item:', error);
+      toast.error('Erro ao adicionar tarefa');
+    }
+  };
+
+  const handleToggleChecklistItem = async (item: ChecklistItem) => {
+    try {
+      const newCompleted = !item.completed;
+      const { error } = await supabase
+        .from('goal_checklist_items')
+        .update({
+          completed: newCompleted,
+          completed_at: newCompleted ? new Date().toISOString() : null,
+        })
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setChecklistItems(prev => prev.map(i => 
+        i.id === item.id 
+          ? { ...i, completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null }
+          : i
+      ));
+    } catch (error) {
+      console.error('Error toggling checklist item:', error);
+      toast.error('Erro ao atualizar tarefa');
+    }
+  };
+
+  const handleDeleteChecklistItem = async (itemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('goal_checklist_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      setChecklistItems(prev => prev.filter(i => i.id !== itemId));
+      toast.success('Tarefa removida!');
+    } catch (error) {
+      console.error('Error deleting checklist item:', error);
+      toast.error('Erro ao remover tarefa');
+    }
+  };
+
+  const completedCount = checklistItems.filter(i => i.completed).length;
+  const totalCount = checklistItems.length;
+
   const handleSave = () => {
     onSave(observations);
     onOpenChange(false);
@@ -243,7 +348,7 @@ export function GoalObservationsModal({
             Observações / Justificativas
           </DialogTitle>
           <DialogDescription>
-            Adicione observações e anexe documentos relevantes para esta meta.
+            Adicione observações, tarefas e anexe documentos relevantes para esta meta.
           </DialogDescription>
         </DialogHeader>
 
@@ -264,7 +369,7 @@ export function GoalObservationsModal({
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="w-3 h-3" />
-                <span>Prazo: {new Date(goal.deadline).toLocaleDateString('pt-BR')}</span>
+                <span>Prazo: {formatDateBR(goal.deadline)}</span>
               </div>
               <div className="text-right">
                 <span className="font-medium text-primary">Peso: {goal.weight}%</span>
@@ -279,6 +384,94 @@ export function GoalObservationsModal({
             <Badge variant="secondary" className="text-xs">
               Meta {goalType === 'macro' ? 'Macro' : 'Setorial'}
             </Badge>
+          </div>
+
+          {/* Checklist Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListTodo className="w-4 h-4 text-primary" />
+                <Label className="text-sm font-medium">Checklist de Tarefas</Label>
+              </div>
+              {totalCount > 0 && (
+                <Badge variant={completedCount === totalCount ? "default" : "secondary"} className="text-xs">
+                  {completedCount}/{totalCount} concluídas
+                </Badge>
+              )}
+            </div>
+
+            {isLoadingChecklist ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {checklistItems.length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {checklistItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg group"
+                      >
+                        <Checkbox
+                          checked={item.completed}
+                          onCheckedChange={() => handleToggleChecklistItem(item)}
+                          disabled={!isAdmin}
+                        />
+                        <span className={cn(
+                          "flex-1 text-sm",
+                          item.completed && "line-through text-muted-foreground"
+                        )}>
+                          {item.text}
+                        </span>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteChecklistItem(item.id)}
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Adicionar nova tarefa..."
+                      value={newChecklistItem}
+                      onChange={(e) => setNewChecklistItem(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddChecklistItem();
+                        }
+                      }}
+                      className="h-8 text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddChecklistItem}
+                      disabled={!newChecklistItem.trim()}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {checklistItems.length === 0 && !isAdmin && (
+                  <p className="text-sm text-muted-foreground italic py-2">
+                    Nenhuma tarefa cadastrada.
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           {/* Observations Field */}
@@ -389,7 +582,7 @@ export function GoalObservationsModal({
             )}
 
             <p className="text-xs text-muted-foreground">
-              Formatos aceitos: PDF, Word, Excel, TXT, JPG, PNG (máx. 10MB)
+              Formatos aceitos: PDF, Word, Excel, TXT, JPG, PNG (máx. 20MB)
             </p>
           </div>
         </div>

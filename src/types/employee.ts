@@ -36,8 +36,13 @@ export type PerformanceLevel = 'low' | 'medium' | 'high' | 'excellent';
 export const getGoalStatus = (deadline: string, deliveryDate?: string): GoalStatus => {
   if (!deliveryDate) return 'not_delivered';
   
-  const deadlineDate = new Date(deadline);
-  const delivery = new Date(deliveryDate);
+  // Parse dates without timezone conversion by splitting the string
+  const [deadlineYear, deadlineMonth, deadlineDay] = deadline.split('-').map(Number);
+  const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDate.split('-').map(Number);
+  
+  // Create dates at noon to avoid any timezone issues
+  const deadlineDate = new Date(deadlineYear, deadlineMonth - 1, deadlineDay, 12, 0, 0);
+  const delivery = new Date(deliveryYear, deliveryMonth - 1, deliveryDay, 12, 0, 0);
   
   // Early: 1+ day before deadline
   const dayBefore = new Date(deadlineDate);

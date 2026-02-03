@@ -15,6 +15,7 @@ import {
   getDelayedGoalsCount,
   getNotDeliveredGoalsCount
 } from '@/types/employee';
+import { formatDateBR } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -379,8 +380,8 @@ export function ExportTab({ employees }: ExportTabProps) {
           baseRow[`Peso Macro ${i + 1} (%)`] = goal.weight;
           baseRow[`Realizado Macro ${i + 1} (%)`] = goal.achieved;
           baseRow[`Status Macro ${i + 1}`] = goal.status;
-          baseRow[`Prazo Macro ${i + 1}`] = goal.deadline ? new Date(goal.deadline).toLocaleDateString('pt-BR') : '';
-          baseRow[`Entrega Macro ${i + 1}`] = goal.deliveryDate ? new Date(goal.deliveryDate).toLocaleDateString('pt-BR') : '';
+          baseRow[`Prazo Macro ${i + 1}`] = goal.deadline ? formatDateBR(goal.deadline) : '';
+          baseRow[`Entrega Macro ${i + 1}`] = goal.deliveryDate ? formatDateBR(goal.deliveryDate) : '';
           baseRow[`Obs Macro ${i + 1}`] = goal.observations;
         });
 
@@ -390,8 +391,8 @@ export function ExportTab({ employees }: ExportTabProps) {
           baseRow[`Peso Setorial ${i + 1} (%)`] = goal.weight;
           baseRow[`Realizado Setorial ${i + 1} (%)`] = goal.achieved;
           baseRow[`Status Setorial ${i + 1}`] = goal.status;
-          baseRow[`Prazo Setorial ${i + 1}`] = goal.deadline ? new Date(goal.deadline).toLocaleDateString('pt-BR') : '';
-          baseRow[`Entrega Setorial ${i + 1}`] = goal.deliveryDate ? new Date(goal.deliveryDate).toLocaleDateString('pt-BR') : '';
+          baseRow[`Prazo Setorial ${i + 1}`] = goal.deadline ? formatDateBR(goal.deadline) : '';
+          baseRow[`Entrega Setorial ${i + 1}`] = goal.deliveryDate ? formatDateBR(goal.deliveryDate) : '';
           baseRow[`Obs Setorial ${i + 1}`] = goal.observations;
         });
 

@@ -23,7 +23,7 @@ import {
   getTotalGoalsWeight,
   getUnifiedTotalWeight
 } from '@/types/employee';
-import { cn } from '@/lib/utils';
+import { cn, formatDateBR } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
 
 interface EmployeeProfileProps {
@@ -156,11 +156,10 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   </span>
                 </div>
 
-                {/* Dates */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Prazo:</span>
-                    <span className="ml-2 font-medium">{new Date(goal.deadline).toLocaleDateString('pt-BR')}</span>
+                    <span className="ml-2 font-medium">{formatDateBR(goal.deadline)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Entrega:</span>

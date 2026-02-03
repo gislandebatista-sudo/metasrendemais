@@ -178,7 +178,8 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
     goalData: Partial<Goal>,
     setGoalData: (data: Partial<Goal>) => void
   ) => {
-    const goals = type === 'macro' ? formData.macroGoals : formData.sectoralGoals;
+    const goalsKey = type === 'macro' ? 'macroGoals' : 'sectoralGoals';
+    const goals = formData[goalsKey] || [];
     const maxGoals = type === 'macro' ? 5 : 10;
     const totalWeight = type === 'macro' ? macroWeight : sectoralWeight;
     const canAdd = (goals?.length || 0) < maxGoals;
@@ -226,26 +227,90 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
 
         {/* Existing Goals */}
         {goals && goals.length > 0 && (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {goals.map((goal) => (
-              <div key={goal.id} className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{goal.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Prazo: {new Date(goal.deadline).toLocaleDateString('pt-BR')}
-                  </p>
+              <div key={goal.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{goal.name}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveGoal(type, goal.id)}
+                    className="text-destructive hover:text-destructive shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded shrink-0">
-                  {goal.weight}%
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveGoal(type, goal.id)}
-                  className="text-destructive hover:text-destructive shrink-0"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                
+                {/* Editable fields */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Peso %</Label>
+                    <Input
+                      type="number"
+                      min="0.1"
+                      max="100"
+                      step="0.1"
+                      value={goal.weight}
+                      onChange={(e) => {
+                        const value = Math.round(parseFloat(e.target.value || '0') * 10) / 10;
+                        const updatedGoals = (formData[goalsKey] || []).map(g => 
+                          g.id === goal.id ? { ...g, weight: Math.max(0.1, value) } : g
+                        );
+                        setFormData({ ...formData, [goalsKey]: updatedGoals });
+                      }}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Realizado %</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max={goal.weight}
+                      step="0.1"
+                      value={goal.achieved}
+                      onChange={(e) => {
+                        const value = Math.min(goal.weight, Math.max(0, Math.round(parseFloat(e.target.value || '0') * 10) / 10));
+                        const updatedGoals = (formData[goalsKey] || []).map(g => 
+                          g.id === goal.id ? { ...g, achieved: value } : g
+                        );
+                        setFormData({ ...formData, [goalsKey]: updatedGoals });
+                      }}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Prazo</Label>
+                    <Input
+                      type="date"
+                      value={goal.deadline}
+                      onChange={(e) => {
+                        const updatedGoals = (formData[goalsKey] || []).map(g => 
+                          g.id === goal.id ? { ...g, deadline: e.target.value } : g
+                        );
+                        setFormData({ ...formData, [goalsKey]: updatedGoals });
+                      }}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Entrega</Label>
+                    <Input
+                      type="date"
+                      value={goal.deliveryDate || ''}
+                      onChange={(e) => {
+                        const updatedGoals = (formData[goalsKey] || []).map(g => 
+                          g.id === goal.id ? { ...g, deliveryDate: e.target.value || undefined } : g
+                        );
+                        setFormData({ ...formData, [goalsKey]: updatedGoals });
+                      }}
+                      className="h-8"
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
