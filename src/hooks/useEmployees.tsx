@@ -77,6 +77,8 @@ export function useEmployees() {
           sectoralGoals,
           performanceBonus: Number(emp.performance_bonus),
           bonusDescription: emp.bonus_description || undefined,
+          updatedAt: emp.updated_at,
+          lastModifiedBy: (emp as any).last_modified_by || undefined,
         };
       });
 

@@ -25,6 +25,7 @@ import {
 } from '@/types/employee';
 import { cn, formatDateBR } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
+import { ModificationHistory } from './ModificationHistory';
 
 interface EmployeeProfileProps {
   employee: Employee;
@@ -294,6 +295,12 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 {employee.sector}
               </span>
             </div>
+            {/* Modification History */}
+            <ModificationHistory 
+              updatedAt={employee.updatedAt} 
+              lastModifiedBy={employee.lastModifiedBy}
+              className="mt-2"
+            />
           </div>
         </div>
 
