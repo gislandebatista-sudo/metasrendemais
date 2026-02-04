@@ -89,10 +89,14 @@ export const getPerformanceLevelLabel = (level: PerformanceLevel): string => {
 
 // Calculate direct sum of achieved percentages for a set of goals
 // Each goal's achieved is capped at its weight (e.g., weight=30% → max achieved=30%)
+// Goals with weight=0 are informational and don't count towards performance
 export const calculateGoalsPerformance = (goals: Goal[]): number => {
   if (goals.length === 0) return 0;
   // Direct sum: each goal contributes its achieved%, but capped at its weight
+  // Goals with weight=0 are skipped (informational only)
   const total = goals.reduce((acc, goal) => {
+    // Skip goals without weight (informational goals)
+    if (goal.weight === 0) return acc;
     // Achieved cannot exceed the goal's weight
     const cappedAchieved = Math.min(goal.achieved, goal.weight);
     return acc + cappedAchieved;

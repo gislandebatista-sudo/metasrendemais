@@ -112,14 +112,16 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
     const currentWeight = getTotalGoalsWeight(currentGoals);
     const newTotalWeight = currentWeight + (goalData.weight || 0);
 
-    if (newTotalWeight > 100) {
+    // Only validate weight if it's > 0 (weight is optional now)
+    if ((goalData.weight || 0) > 0 && newTotalWeight > 100) {
       toast.error('Peso total excede 100%', {
         description: `Peso máximo disponível: ${100 - currentWeight}%`,
       });
       return;
     }
 
-    if (goalData.name && goalData.weight && goalData.deadline && currentGoals.length < maxGoals) {
+    // Name and deadline are required, but weight is optional (can be 0)
+    if (goalData.name && goalData.deadline && currentGoals.length < maxGoals) {
       const goal: Goal = {
         id: `${type.charAt(0)}g${Date.now()}`,
         name: goalData.name || '',
@@ -250,18 +252,19 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
                     <Label className="text-xs text-muted-foreground">Peso %</Label>
                     <Input
                       type="number"
-                      min="0.1"
+                      min="0"
                       max="100"
-                      step="0.1"
-                      value={goal.weight}
+                      step="0.0001"
+                      value={goal.weight === 0 ? '' : goal.weight}
                       onChange={(e) => {
-                        const value = Math.round(parseFloat(e.target.value || '0') * 10) / 10;
+                        const value = parseFloat(e.target.value || '0');
                         const updatedGoals = (formData[goalsKey] || []).map(g => 
-                          g.id === goal.id ? { ...g, weight: Math.max(0.1, value) } : g
+                          g.id === goal.id ? { ...g, weight: Math.max(0, value) } : g
                         );
                         setFormData({ ...formData, [goalsKey]: updatedGoals });
                       }}
                       className="h-8"
+                      placeholder="Opcional"
                     />
                   </div>
                   <div className="space-y-1">
@@ -269,17 +272,19 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
                     <Input
                       type="number"
                       min="0"
-                      max={goal.weight}
-                      step="0.1"
-                      value={goal.achieved}
+                      max={goal.weight || 100}
+                      step="0.0001"
+                      value={goal.achieved === 0 ? '' : goal.achieved}
                       onChange={(e) => {
-                        const value = Math.min(goal.weight, Math.max(0, Math.round(parseFloat(e.target.value || '0') * 10) / 10));
+                        const maxVal = goal.weight || 100;
+                        const value = Math.min(maxVal, Math.max(0, parseFloat(e.target.value || '0')));
                         const updatedGoals = (formData[goalsKey] || []).map(g => 
                           g.id === goal.id ? { ...g, achieved: value } : g
                         );
                         setFormData({ ...formData, [goalsKey]: updatedGoals });
                       }}
                       className="h-8"
+                      placeholder="0"
                     />
                   </div>
                   <div className="space-y-1">
@@ -329,12 +334,13 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
               />
               <Input
                 type="number"
-                placeholder={`Peso % (max: ${remainingWeight}%)`}
+                placeholder={`Peso % (opcional, max: ${remainingWeight}%)`}
                 min="0"
                 max={remainingWeight}
-                value={goalData.weight || ''}
+                step="0.0001"
+                value={goalData.weight === 0 ? '' : goalData.weight || ''}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
+                  const value = parseFloat(e.target.value) || 0;
                   setGoalData({ ...goalData, weight: Math.min(value, remainingWeight) });
                 }}
               />
@@ -367,24 +373,24 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">% Realizado (máx. 100%)</Label>
+                <Label className="text-xs">% Realizado (máx. peso definido)</Label>
                 <Input
                   type="number"
                   placeholder="0-100"
                   min="0"
-                  max="100"
-                  step="0.1"
-                  value={goalData.achieved || ''}
+                  max={goalData.weight || 100}
+                  step="0.0001"
+                  value={goalData.achieved === 0 ? '' : goalData.achieved || ''}
                   onChange={(e) => {
-                    const value = Math.min(100, parseFloat(e.target.value) || 0);
-                    const rounded = Math.round(value * 10) / 10;
-                    setGoalData({ ...goalData, achieved: rounded });
+                    const maxVal = goalData.weight || 100;
+                    const value = Math.min(maxVal, parseFloat(e.target.value) || 0);
+                    setGoalData({ ...goalData, achieved: value });
                   }}
                 />
               </div>
               <Button 
                 onClick={() => handleAddGoal(type)} 
-                disabled={!goalData.name || !goalData.weight || !goalData.deadline}
+                disabled={!goalData.name || !goalData.deadline}
                 className="self-end"
               >
                 <Plus className="w-4 h-4 mr-1" />
