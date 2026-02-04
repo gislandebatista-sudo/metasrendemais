@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          last_modified_by: string | null
           name: string
           performance_bonus: number
           photo: string | null
@@ -34,6 +35,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          last_modified_by?: string | null
           name: string
           performance_bonus?: number
           photo?: string | null
@@ -48,6 +50,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          last_modified_by?: string | null
           name?: string
           performance_bonus?: number
           photo?: string | null
@@ -148,6 +151,7 @@ export type Database = {
           employee_id: string
           goal_type: string
           id: string
+          last_modified_by: string | null
           name: string
           observations: string | null
           updated_at: string
@@ -162,6 +166,7 @@ export type Database = {
           employee_id: string
           goal_type: string
           id?: string
+          last_modified_by?: string | null
           name: string
           observations?: string | null
           updated_at?: string
@@ -176,6 +181,7 @@ export type Database = {
           employee_id?: string
           goal_type?: string
           id?: string
+          last_modified_by?: string | null
           name?: string
           observations?: string | null
           updated_at?: string

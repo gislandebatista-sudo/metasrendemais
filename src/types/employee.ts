@@ -23,6 +23,8 @@ export interface Employee {
   sectoralGoals: Goal[]; // Up to 10 goals
   performanceBonus: number; // 0-5%
   bonusDescription?: string; // Description/reason for bonus
+  updatedAt?: string; // ISO date string for last modification
+  lastModifiedBy?: string; // User ID who last modified
 }
 
 export interface MonthlyPerformance {
