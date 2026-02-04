@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { sectors, months } from '@/data/mockEmployees';
+import { months } from '@/data/mockEmployees';
 import { GoalStatus } from '@/types/employee';
 
 interface EmployeeFilterProps {
@@ -18,6 +18,7 @@ interface EmployeeFilterProps {
   selectedGoalStatus: string;
   onGoalStatusChange: (status: string) => void;
   onAddEmployee: () => void;
+  availableSectors?: string[];
 }
 
 const goalStatusOptions = [
@@ -40,6 +41,7 @@ export function EmployeeFilter({
   selectedGoalStatus,
   onGoalStatusChange,
   onAddEmployee,
+  availableSectors = [],
 }: EmployeeFilterProps) {
   return (
     <div className="space-y-3 mb-6">
@@ -63,7 +65,7 @@ export function EmployeeFilter({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os setores</SelectItem>
-              {sectors.map((sector) => (
+              {availableSectors.map((sector) => (
                 <SelectItem key={sector} value={sector}>
                   {sector}
                 </SelectItem>

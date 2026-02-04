@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Header } from '@/components/dashboard/Header';
-import { StatsCards } from '@/components/dashboard/StatsCards';
+import { MainStatsCards } from '@/components/dashboard/MainStatsCards';
+import { DashboardStatsCards } from '@/components/dashboard/DashboardStatsCards';
 import { EmployeeFilter } from '@/components/dashboard/EmployeeFilter';
 import { RankingTable } from '@/components/dashboard/RankingTable';
 import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
@@ -9,6 +10,7 @@ import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
 import { useEmployees } from '@/hooks/useEmployees';
+import { useSectors } from '@/hooks/useSectors';
 import { useAuth } from '@/hooks/useAuth';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +21,7 @@ import { toast } from 'sonner';
 const Index = () => {
   const { isAdmin } = useAuth();
   const { employees, isLoading, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useEmployees();
+  const { sectors } = useSectors();
   
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -188,7 +191,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="employees" className="space-y-6">
-            <StatsCards employees={employees} />
+            <MainStatsCards employees={employees} />
 
             <EmployeeFilter
               searchTerm={searchTerm}
@@ -202,6 +205,7 @@ const Index = () => {
               selectedGoalStatus={selectedGoalStatus}
               onGoalStatusChange={setSelectedGoalStatus}
               onAddEmployee={handleOpenModal}
+              availableSectors={sectors}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -278,7 +282,8 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <StatsCards employees={employees} />
+            <MainStatsCards employees={employees} />
+            <DashboardStatsCards employees={employees} />
             <PerformanceCharts employees={employees} />
           </TabsContent>
 
