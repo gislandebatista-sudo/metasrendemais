@@ -34,9 +34,10 @@ interface EmployeeProfileProps {
   onUpdateBonus: (employeeId: string, bonus: number, description?: string) => void;
   onEditEmployee: (employee: Employee) => void;
   onDeleteEmployee: (employeeId: string) => void;
+  canEdit?: boolean;
 }
 
-export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus, onEditEmployee, onDeleteEmployee }: EmployeeProfileProps) {
+export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus, onEditEmployee, onDeleteEmployee, canEdit = true }: EmployeeProfileProps) {
   const [editingBonus, setEditingBonus] = useState(false);
   const [bonusValue, setBonusValue] = useState(employee.performanceBonus);
   const [bonusDescription, setBonusDescription] = useState(employee.bonusDescription || '');
@@ -164,12 +165,16 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Entrega:</span>
-                    <Input
-                      type="date"
-                      value={goal.deliveryDate || ''}
-                      onChange={(e) => handleDeliveryDateChange(type, goal.id, e.target.value)}
-                      className="h-7 text-sm w-36"
-                    />
+                    {canEdit ? (
+                      <Input
+                        type="date"
+                        value={goal.deliveryDate || ''}
+                        onChange={(e) => handleDeliveryDateChange(type, goal.id, e.target.value)}
+                        className="h-7 text-sm w-36"
+                      />
+                    ) : (
+                      <span className="font-medium">{goal.deliveryDate ? formatDateBR(goal.deliveryDate) : '-'}</span>
+                    )}
                   </div>
                 </div>
 
@@ -188,17 +193,23 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                     </div>
                   </div>
                   
-                  <div className="w-24">
-                    <Input
-                      type="number"
-                      min="0"
-                      max={goal.weight}
-                      step="0.1"
-                      value={goal.achieved}
-                      onChange={(e) => handleAchievedChange(type, goal.id, goal.weight, e.target.value)}
-                      className="text-center font-medium h-8"
-                    />
-                  </div>
+                  {canEdit ? (
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        min="0"
+                        max={goal.weight}
+                        step="0.1"
+                        value={goal.achieved}
+                        onChange={(e) => handleAchievedChange(type, goal.id, goal.weight, e.target.value)}
+                        className="text-center font-medium h-8"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 text-right">
+                      <span className="font-medium">{goal.achieved.toFixed(1)}%</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Contribution and Observations */}
@@ -248,23 +259,27 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             Perfil do Colaborador
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => onEditEmployee(employee)}>
-              <Pencil className="w-4 h-4 mr-1" />
-              Editar
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-destructive hover:text-destructive"
-              onClick={() => {
-                if (confirm('Tem certeza que deseja excluir este colaborador?')) {
-                  onDeleteEmployee(employee.id);
-                }
-              }}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Excluir
-            </Button>
+            {canEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => onEditEmployee(employee)}>
+                  <Pencil className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => {
+                    if (confirm('Tem certeza que deseja excluir este colaborador?')) {
+                      onDeleteEmployee(employee.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Excluir
+                </Button>
+              </>
+            )}
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-5 h-5" />
             </Button>
@@ -376,16 +391,18 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
               <Gift className="w-5 h-5 text-accent" />
               <span className="font-semibold">Bônus de Performance</span>
             </div>
-            {!editingBonus ? (
-              <Button variant="ghost" size="sm" onClick={() => setEditingBonus(true)}>
-                <Pencil className="w-4 h-4 mr-1" />
-                Editar
-              </Button>
-            ) : (
-              <Button variant="default" size="sm" onClick={handleSaveBonus}>
-                <Save className="w-4 h-4 mr-1" />
-                Salvar
-              </Button>
+            {canEdit && (
+              !editingBonus ? (
+                <Button variant="ghost" size="sm" onClick={() => setEditingBonus(true)}>
+                  <Pencil className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+              ) : (
+                <Button variant="default" size="sm" onClick={handleSaveBonus}>
+                  <Save className="w-4 h-4 mr-1" />
+                  Salvar
+                </Button>
+              )
             )}
           </div>
           

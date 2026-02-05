@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      employee_monthly_bonus: {
+        Row: {
+          bonus_description: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          last_modified_by: string | null
+          month: string
+          performance_bonus: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_description?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          last_modified_by?: string | null
+          month: string
+          performance_bonus?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_description?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          last_modified_by?: string | null
+          month?: string
+          performance_bonus?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_monthly_bonus_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           bonus_description: string | null
@@ -59,6 +100,36 @@ export type Database = {
           sector?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      evaluation_months: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          month: string
+          opened_at: string
+          status: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          month: string
+          opened_at?: string
+          status?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          month?: string
+          opened_at?: string
+          status?: string
         }
         Relationships: []
       }
@@ -134,6 +205,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "goal_checklist_items_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_monthly_progress: {
+        Row: {
+          achieved: number
+          created_at: string
+          delivery_date: string | null
+          goal_id: string
+          id: string
+          last_modified_by: string | null
+          month: string
+          observations: string | null
+          updated_at: string
+        }
+        Insert: {
+          achieved?: number
+          created_at?: string
+          delivery_date?: string | null
+          goal_id: string
+          id?: string
+          last_modified_by?: string | null
+          month: string
+          observations?: string | null
+          updated_at?: string
+        }
+        Update: {
+          achieved?: number
+          created_at?: string
+          delivery_date?: string | null
+          goal_id?: string
+          id?: string
+          last_modified_by?: string | null
+          month?: string
+          observations?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_monthly_progress_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "goals"
@@ -257,6 +372,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      initialize_month: { Args: { target_month: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {

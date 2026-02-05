@@ -1,9 +1,8 @@
-import { Search, UserPlus, Filter, Calendar, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { Search, UserPlus, Filter, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { months } from '@/data/mockEmployees';
 import { GoalStatus } from '@/types/employee';
 
 interface EmployeeFilterProps {
@@ -19,6 +18,7 @@ interface EmployeeFilterProps {
   onGoalStatusChange: (status: string) => void;
   onAddEmployee: () => void;
   availableSectors?: string[];
+  canEdit?: boolean;
 }
 
 const goalStatusOptions = [
@@ -42,6 +42,7 @@ export function EmployeeFilter({
   onGoalStatusChange,
   onAddEmployee,
   availableSectors = [],
+  canEdit = true,
 }: EmployeeFilterProps) {
   return (
     <div className="space-y-3 mb-6">
@@ -73,21 +74,6 @@ export function EmployeeFilter({
             </SelectContent>
           </Select>
 
-          <Select value={selectedMonth} onValueChange={onMonthChange}>
-            <SelectTrigger className="w-[140px]">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os meses</SelectItem>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={month.value}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <Select value={selectedStatus} onValueChange={onStatusChange}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Status" />
@@ -99,10 +85,12 @@ export function EmployeeFilter({
             </SelectContent>
           </Select>
 
-          <Button onClick={onAddEmployee} className="gap-2">
-            <UserPlus className="w-4 h-4" />
-            <span className="hidden sm:inline">Novo Colaborador</span>
-          </Button>
+          {canEdit && (
+            <Button onClick={onAddEmployee} className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Novo Colaborador</span>
+            </Button>
+          )}
         </div>
       </div>
 
