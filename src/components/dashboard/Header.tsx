@@ -1,6 +1,5 @@
-import { Calendar, Users, TrendingUp } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { months } from '@/data/mockEmployees';
+import { Users, TrendingUp } from 'lucide-react';
+import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
@@ -33,21 +32,12 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
             <span className="font-medium">{totalEmployees} colaboradores ativos</span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            <Select value={selectedMonth} onValueChange={onMonthChange}>
-              <SelectTrigger className="w-[140px] bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground">
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os meses</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Month Selector with navigation */}
+          <div className="bg-primary-foreground/10 rounded-lg">
+            <MonthSelector 
+              selectedMonth={selectedMonth}
+              onMonthChange={onMonthChange}
+            />
           </div>
 
           {/* User Menu */}

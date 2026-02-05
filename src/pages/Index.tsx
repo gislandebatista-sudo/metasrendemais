@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Header } from '@/components/dashboard/Header';
 import { MainStatsCards } from '@/components/dashboard/MainStatsCards';
 import { DashboardStatsCards } from '@/components/dashboard/DashboardStatsCards';
@@ -9,21 +9,28 @@ import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
-import { useEmployees } from '@/hooks/useEmployees';
+import { useMonthlyEmployees } from '@/hooks/useMonthlyEmployees';
+import { useEvaluationMonths } from '@/hooks/useEvaluationMonths';
 import { useSectors } from '@/hooks/useSectors';
 import { useAuth } from '@/hooks/useAuth';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, BarChart3, Download, List, Loader2, Shield, Eye } from 'lucide-react';
+import { Users, BarChart3, Download, List, Loader2, Shield, Eye, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const Index = () => {
   const { isAdmin } = useAuth();
-  const { employees, isLoading, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useEmployees();
+  
+  // Month state - default to current month in YYYY-MM format
+  const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
+  
+  // Use the new monthly employees hook
+  const { employees, isLoading, activeMonth, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
+  const { isMonthEditable, evaluationMonths } = useEvaluationMonths();
   const { sectors } = useSectors();
   
-  const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
@@ -31,6 +38,9 @@ const Index = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>(undefined);
+  
+  // Check if current month is editable
+  const canEdit = isAdmin && isMonthEditable(activeMonth);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
@@ -38,7 +48,6 @@ const Index = () => {
         emp.role.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSector = selectedSector === 'all' || emp.sector === selectedSector;
       const matchesStatus = selectedStatus === 'all' || emp.status === selectedStatus;
-      const matchesMonth = selectedMonth === 'all' || emp.referenceMonth.endsWith(`-${selectedMonth}`);
       
       // Filter by goal status
       let matchesGoalStatus = true;
@@ -49,9 +58,9 @@ const Index = () => {
         );
       }
       
-      return matchesSearch && matchesSector && matchesStatus && matchesMonth && matchesGoalStatus;
+      return matchesSearch && matchesSector && matchesStatus && matchesGoalStatus;
     });
-  }, [employees, searchTerm, selectedSector, selectedStatus, selectedMonth, selectedGoalStatus]);
+  }, [employees, searchTerm, selectedSector, selectedStatus, selectedGoalStatus]);
 
   const handleAddEmployee = async (newEmployee: Employee) => {
     const success = await saveEmployee(newEmployee);
@@ -65,9 +74,11 @@ const Index = () => {
   };
 
   const handleEditEmployee = (employee: Employee) => {
-    if (!isAdmin) {
+    if (!canEdit) {
       toast.error('Sem permissão', {
-        description: 'Apenas administradores podem editar colaboradores.',
+        description: isAdmin 
+          ? 'Este mês está fechado e não pode ser editado.'
+          : 'Apenas administradores podem editar colaboradores.',
       });
       return;
     }
@@ -76,9 +87,11 @@ const Index = () => {
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
-    if (!isAdmin) {
+    if (!canEdit) {
       toast.error('Sem permissão', {
-        description: 'Apenas administradores podem excluir colaboradores.',
+        description: isAdmin 
+          ? 'Este mês está fechado e não pode ser editado.'
+          : 'Apenas administradores podem excluir colaboradores.',
       });
       return;
     }
@@ -113,9 +126,11 @@ const Index = () => {
   };
 
   const handleOpenModal = () => {
-    if (!isAdmin) {
+    if (!canEdit) {
       toast.error('Sem permissão', {
-        description: 'Apenas administradores podem cadastrar colaboradores.',
+        description: isAdmin 
+          ? 'Este mês está fechado e não pode ser editado.'
+          : 'Apenas administradores podem cadastrar colaboradores.',
       });
       return;
     }
@@ -145,8 +160,8 @@ const Index = () => {
           totalEmployees={activeEmployeesCount}
         />
 
-        {/* Role Badge */}
-        <div className="mb-4 flex items-center gap-2">
+        {/* Role and Month Status Badges */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge 
             variant={isAdmin ? 'default' : 'secondary'} 
             className="gap-1"
@@ -163,6 +178,15 @@ const Index = () => {
               </>
             )}
           </Badge>
+          
+          {/* Month edit status */}
+          {!isMonthEditable(activeMonth) && (
+            <Badge variant="outline" className="gap-1 border-muted-foreground/50">
+              <Lock className="w-3 h-3" />
+              Mês fechado para edição
+            </Badge>
+          )}
+          
           {!isAdmin && (
             <span className="text-sm text-muted-foreground">
               Você pode visualizar dados, mas não pode editá-los.
@@ -206,6 +230,7 @@ const Index = () => {
               onGoalStatusChange={setSelectedGoalStatus}
               onAddEmployee={handleOpenModal}
               availableSectors={sectors}
+              canEdit={canEdit}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -225,6 +250,7 @@ const Index = () => {
                     onUpdateBonus={handleUpdateBonus}
                     onEditEmployee={handleEditEmployee}
                     onDeleteEmployee={handleDeleteEmployee}
+                    canEdit={canEdit}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[400px]">
@@ -263,6 +289,7 @@ const Index = () => {
                     onUpdateBonus={handleUpdateBonus}
                     onEditEmployee={handleEditEmployee}
                     onDeleteEmployee={handleDeleteEmployee}
+                    canEdit={canEdit}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[400px]">
