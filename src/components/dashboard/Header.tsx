@@ -1,7 +1,8 @@
 import { Users } from 'lucide-react';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
-import logoRende from '@/assets/logo-rende.png';
+import { ThemeToggle } from './ThemeToggle';
+import logoRende from '@/assets/logo-rende-white.png';
 
 interface HeaderProps {
   selectedMonth: string;
@@ -18,7 +19,7 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
           <img 
             src={logoRende} 
             alt="Rende+ Logo" 
-            className="h-16 md:h-20 w-auto object-contain drop-shadow-lg"
+            className="h-20 md:h-24 w-auto object-contain drop-shadow-lg"
           />
           <div className="border-l-2 border-primary-foreground/30 pl-5">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight">
@@ -44,6 +45,9 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
               onMonthChange={onMonthChange}
             />
           </div>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* User Menu */}
           <UserMenu />
