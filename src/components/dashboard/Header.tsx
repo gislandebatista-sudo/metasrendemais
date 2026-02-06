@@ -2,7 +2,7 @@ import { Users } from 'lucide-react';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
-import logoRende from '@/assets/logo-rende-white.png';
+import logoRende from '@/assets/logo-rende-new.png';
 
 interface HeaderProps {
   selectedMonth: string;
@@ -12,20 +12,20 @@ interface HeaderProps {
 
 export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderProps) {
   return (
-    <header className="gradient-primary text-primary-foreground p-6 rounded-2xl mb-6 shadow-lg">
+    <header className="bg-card border border-border p-6 rounded-2xl mb-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         {/* Logo + Title Section */}
         <div className="flex items-center gap-5">
           <img 
             src={logoRende} 
             alt="Rende+ Logo" 
-            className="h-20 md:h-24 w-auto object-contain drop-shadow-lg"
+            className="h-14 md:h-16 w-auto object-contain"
           />
-          <div className="border-l-2 border-primary-foreground/30 pl-5">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight">
+          <div className="border-l-2 border-border pl-5">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight text-foreground">
               Gerenciamento de metas
             </h1>
-            <p className="text-primary-foreground/80 text-lg md:text-xl font-semibold mt-0.5">
+            <p className="text-muted-foreground text-lg md:text-xl font-semibold mt-0.5">
               2026
             </p>
           </div>
@@ -33,13 +33,13 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees }: HeaderP
         
         {/* Controls Section */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-primary-foreground/10 px-4 py-2 rounded-lg">
+          <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg">
             <Users className="w-5 h-5" />
             <span className="font-medium">{totalEmployees} colaboradores ativos</span>
           </div>
           
           {/* Month Selector with navigation */}
-          <div className="bg-primary-foreground/10 rounded-lg">
+          <div className="bg-muted rounded-lg">
             <MonthSelector 
               selectedMonth={selectedMonth}
               onMonthChange={onMonthChange}
