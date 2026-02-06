@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "employee_monthly_bonus_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       employees: {
@@ -310,6 +317,13 @@ export type Database = {
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "goals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -362,7 +376,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      employees_secure: {
+        Row: {
+          bonus_description: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          last_modified_by: string | null
+          name: string | null
+          performance_bonus: number | null
+          photo: string | null
+          reference_month: string | null
+          role: string | null
+          sector: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bonus_description?: never
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          last_modified_by?: string | null
+          name?: string | null
+          performance_bonus?: never
+          photo?: string | null
+          reference_month?: string | null
+          role?: string | null
+          sector?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bonus_description?: never
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          last_modified_by?: string | null
+          name?: string | null
+          performance_bonus?: never
+          photo?: string | null
+          reference_month?: string | null
+          role?: string | null
+          sector?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
