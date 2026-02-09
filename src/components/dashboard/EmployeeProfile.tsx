@@ -85,7 +85,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     // Cap achieved at the goal's weight (not 100%)
     const numValue = Math.max(0, parseFloat(value) || 0);
     const cappedValue = Math.min(numValue, goalWeight);
-    const roundedValue = Math.round(cappedValue * 10) / 10; // Round to 0.1
+    const roundedValue = Math.round(cappedValue * 10000) / 10000; // Round to 0.0001
     
     // Warn if trying to exceed the goal's weight limit
     if (numValue > goalWeight) {
