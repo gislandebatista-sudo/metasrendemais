@@ -199,7 +199,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                         type="number"
                         min="0"
                         max={goal.weight}
-                        step="0.1"
+                        step="0.0001"
                         value={goal.achieved}
                         onChange={(e) => handleAchievedChange(type, goal.id, goal.weight, e.target.value)}
                         className="text-center font-medium h-8"
@@ -414,7 +414,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   type="number"
                   min="0"
                   max="5"
-                  step="0.5"
+                  step="0.0001"
                   value={bonusValue}
                   onChange={(e) => setBonusValue(Math.min(5, parseFloat(e.target.value) || 0))}
                   className="w-20"
