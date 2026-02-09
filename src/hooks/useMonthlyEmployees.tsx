@@ -342,37 +342,15 @@ export function useMonthlyEmployees(selectedMonth: string) {
       if ('observations' in updates) progressUpdates.observations = updates.observations || null;
 
       if (Object.keys(progressUpdates).length > 0) {
-        // Check if a record already exists
-        const { data: existing } = await supabase
+        const { error: progressError } = await supabase
           .from('goal_monthly_progress')
-          .select('id')
-          .eq('goal_id', goalId)
-          .eq('month', activeMonth)
-          .maybeSingle();
+          .upsert({
+            goal_id: goalId,
+            month: activeMonth,
+            ...progressUpdates,
+          }, { onConflict: 'goal_id,month', ignoreDuplicates: false });
 
-        if (existing) {
-          // Update only the changed fields
-          const { error: progressError } = await supabase
-            .from('goal_monthly_progress')
-            .update(progressUpdates)
-            .eq('goal_id', goalId)
-            .eq('month', activeMonth);
-
-          if (progressError) throw progressError;
-        } else {
-          // Insert new record with defaults for missing fields
-          const { error: progressError } = await supabase
-            .from('goal_monthly_progress')
-            .insert({
-              goal_id: goalId,
-              month: activeMonth,
-              achieved: updates.achieved ?? 0,
-              delivery_date: updates.deliveryDate || null,
-              observations: updates.observations || null,
-            });
-
-          if (progressError) throw progressError;
-        }
+        if (progressError) throw progressError;
       }
 
       // Update local state
