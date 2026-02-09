@@ -549,7 +549,7 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
                     type="number"
                     min="0"
                     max="5"
-                    step="0.5"
+                    step="0.0001"
                     value={formData.performanceBonus || 0}
                     onChange={(e) => setFormData({ ...formData, performanceBonus: Math.min(5, parseFloat(e.target.value) || 0) })}
                     className="w-24"
