@@ -195,65 +195,98 @@ export function useMonthlyEmployees(selectedMonth: string) {
         employeeId = newEmp.id;
       }
 
-      // Delete existing goals for this employee and recreate
-      await supabase.from('goals').delete().eq('employee_id', employeeId);
+      // Update existing goals in-place to preserve monthly progress history
+      // Fetch current goals for this employee
+      const { data: existingGoals } = await supabase
+        .from('goals')
+        .select('id')
+        .eq('employee_id', employeeId);
 
-      // Prepare goals for insertion (base templates)
-      const allGoals = [
-        ...employee.macroGoals.map(g => ({
-          employee_id: employeeId,
-          name: g.name,
-          description: g.description,
-          weight: g.weight,
-          achieved: 0, // Deprecated - now in goal_monthly_progress
-          deadline: g.deadline,
-          delivery_date: null,
-          observations: null,
-          goal_type: 'macro' as const,
-        })),
-        ...employee.sectoralGoals.map(g => ({
-          employee_id: employeeId,
-          name: g.name,
-          description: g.description,
-          weight: g.weight,
-          achieved: 0,
-          deadline: g.deadline,
-          delivery_date: null,
-          observations: null,
-          goal_type: 'sectoral' as const,
-        })),
+      const existingGoalIds = new Set((existingGoals || []).map(g => g.id));
+
+      // Separate goals into updates vs new inserts
+      const allGoalsWithType = [
+        ...employee.macroGoals.map(g => ({ ...g, goal_type: 'macro' as const })),
+        ...employee.sectoralGoals.map(g => ({ ...g, goal_type: 'sectoral' as const })),
       ];
 
-      if (allGoals.length > 0) {
-        const { data: insertedGoals, error: goalsError } = await supabase
+      const goalsToUpdate = allGoalsWithType.filter(g => existingGoalIds.has(g.id));
+      const goalsToInsert = allGoalsWithType.filter(g => !existingGoalIds.has(g.id));
+      const incomingIds = new Set(allGoalsWithType.map(g => g.id));
+      const goalsToDelete = [...existingGoalIds].filter(id => !incomingIds.has(id));
+
+      // Update existing goals (base template data only)
+      for (const goal of goalsToUpdate) {
+        const { error } = await supabase
           .from('goals')
-          .insert(allGoals)
+          .update({
+            name: goal.name,
+            description: goal.description || null,
+            weight: goal.weight,
+            deadline: goal.deadline,
+            goal_type: goal.goal_type,
+          })
+          .eq('id', goal.id);
+        if (error) throw error;
+      }
+
+      // Insert new goals
+      let newGoalIds: string[] = [];
+      if (goalsToInsert.length > 0) {
+        const { data: inserted, error: insertError } = await supabase
+          .from('goals')
+          .insert(goalsToInsert.map(g => ({
+            employee_id: employeeId,
+            name: g.name,
+            description: g.description || null,
+            weight: g.weight,
+            achieved: 0,
+            deadline: g.deadline,
+            delivery_date: null,
+            observations: null,
+            goal_type: g.goal_type,
+          })))
           .select('id');
+        if (insertError) throw insertError;
+        newGoalIds = (inserted || []).map(g => g.id);
+      }
 
-        if (goalsError) throw goalsError;
+      // Delete removed goals (this will cascade to their monthly progress - intended)
+      if (goalsToDelete.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('goals')
+          .delete()
+          .in('id', goalsToDelete);
+        if (deleteError) throw deleteError;
+      }
 
-        // Create monthly progress entries for the new goals
-        const progressEntries = insertedGoals?.map((goal, index) => {
-          const originalGoal = index < employee.macroGoals.length 
-            ? employee.macroGoals[index]
-            : employee.sectoralGoals[index - employee.macroGoals.length];
-          
-          return {
-            goal_id: goal.id,
-            month: activeMonth,
-            achieved: originalGoal.achieved || 0,
-            delivery_date: originalGoal.deliveryDate || null,
-            observations: originalGoal.observations || null,
-          };
-        }) || [];
+      // Create monthly progress entries for ALL goals in the current month
+      const allCurrentGoalIds = [
+        ...goalsToUpdate.map(g => g.id),
+        ...newGoalIds,
+      ];
+      const allCurrentGoals = [
+        ...goalsToUpdate,
+        ...goalsToInsert,
+      ];
 
-        if (progressEntries.length > 0) {
-          const { error: progressError } = await supabase
-            .from('goal_monthly_progress')
-            .upsert(progressEntries, { onConflict: 'goal_id,month' });
+      const progressEntries = allCurrentGoalIds.map((goalId, index) => {
+        const originalGoal = allCurrentGoals[index];
+        return {
+          goal_id: goalId,
+          month: activeMonth,
+          achieved: originalGoal.achieved || 0,
+          delivery_date: originalGoal.deliveryDate || null,
+          observations: originalGoal.observations || null,
+        };
+      });
 
-          if (progressError) throw progressError;
-        }
+      if (progressEntries.length > 0) {
+        const { error: progressError } = await supabase
+          .from('goal_monthly_progress')
+          .upsert(progressEntries, { onConflict: 'goal_id,month' });
+
+        if (progressError) throw progressError;
       }
 
       // Save monthly bonus
