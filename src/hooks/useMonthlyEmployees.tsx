@@ -5,13 +5,6 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-interface MonthlyProgress {
-  goalId: string;
-  achieved: number;
-  deliveryDate?: string;
-  observations?: string;
-}
-
 interface MonthlyBonus {
   employeeId: string;
   performanceBonus: number;
@@ -23,19 +16,17 @@ export function useMonthlyEmployees(selectedMonth: string) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAdmin } = useAuth();
 
-  // Get the active month or default to current
   const activeMonth = useMemo(() => {
     if (selectedMonth === 'all') {
       return format(new Date(), 'yyyy-MM');
     }
-    // If selectedMonth is just MM format, convert to YYYY-MM
     if (selectedMonth.length === 2) {
       return `${new Date().getFullYear()}-${selectedMonth}`;
     }
     return selectedMonth;
   }, [selectedMonth]);
 
-  // Fetch employees with their goals and monthly progress
+  // Fetch employees with their goals built from monthly snapshots
   const fetchEmployees = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -47,18 +38,19 @@ export function useMonthlyEmployees(selectedMonth: string) {
 
       if (employeesError) throw employeesError;
 
-      // Fetch goals (base templates)
+      // Fetch goals (base templates) - needed for employee_id mapping
       const { data: goalsData, error: goalsError } = await supabase
         .from('goals')
-        .select('*');
+        .select('id, employee_id, goal_type, name, description, weight, deadline');
 
       if (goalsError) throw goalsError;
 
-      // Fetch monthly progress for the selected month
+      // Fetch monthly progress (snapshots) for the selected month, excluding soft-deleted
       const { data: progressData, error: progressError } = await supabase
         .from('goal_monthly_progress')
         .select('*')
-        .eq('month', activeMonth);
+        .eq('month', activeMonth)
+        .eq('is_deleted', false);
 
       if (progressError) throw progressError;
 
@@ -70,15 +62,23 @@ export function useMonthlyEmployees(selectedMonth: string) {
 
       if (bonusError) throw bonusError;
 
-      // Create lookup maps for faster access
-      const progressMap = new Map<string, MonthlyProgress>();
+      // Build a goal_id -> employee_id lookup from goals table
+      const goalToEmployee = new Map<string, string>();
+      const goalBaseInfo = new Map<string, { employee_id: string; goal_type: string; name: string; description: string | null; weight: number; deadline: string }>();
+      (goalsData || []).forEach(g => {
+        goalToEmployee.set(g.id, g.employee_id);
+        goalBaseInfo.set(g.id, g);
+      });
+
+      // Group monthly progress by employee_id
+      const progressByEmployee = new Map<string, any[]>();
       (progressData || []).forEach(p => {
-        progressMap.set(p.goal_id, {
-          goalId: p.goal_id,
-          achieved: Number(p.achieved),
-          deliveryDate: p.delivery_date || undefined,
-          observations: p.observations || undefined,
-        });
+        const employeeId = goalToEmployee.get(p.goal_id);
+        if (!employeeId) return;
+        if (!progressByEmployee.has(employeeId)) {
+          progressByEmployee.set(employeeId, []);
+        }
+        progressByEmployee.get(employeeId)!.push(p);
       });
 
       const bonusMap = new Map<string, MonthlyBonus>();
@@ -90,29 +90,40 @@ export function useMonthlyEmployees(selectedMonth: string) {
         });
       });
 
-      // Map employees with their goals and monthly data
+      // Map employees using monthly snapshot data
       const mappedEmployees: Employee[] = (employeesData || []).map(emp => {
-        const empGoals = goalsData?.filter(g => g.employee_id === emp.id) || [];
-        
-        const mapGoal = (g: any): Goal => {
-          const progress = progressMap.get(g.id);
+        const empProgress = progressByEmployee.get(emp.id) || [];
+
+        const mapProgressToGoal = (p: any): Goal => {
+          const base = goalBaseInfo.get(p.goal_id);
           return {
-            id: g.id,
-            name: g.name,
-            description: g.description || undefined,
-            weight: Number(g.weight),
-            // Use monthly progress if available, otherwise 0
-            achieved: progress?.achieved ?? 0,
-            deadline: g.deadline,
-            deliveryDate: progress?.deliveryDate,
-            observations: progress?.observations,
+            id: p.goal_id,
+            // Use snapshot data if available, otherwise fall back to base goal
+            name: p.goal_name || base?.name || 'Meta',
+            description: p.goal_description || base?.description || undefined,
+            weight: p.goal_weight != null ? Number(p.goal_weight) : (base?.weight ? Number(base.weight) : 0),
+            achieved: Number(p.achieved),
+            deadline: p.goal_deadline || base?.deadline || '',
+            deliveryDate: p.delivery_date || undefined,
+            observations: p.observations || undefined,
           };
         };
 
-        const macroGoals = empGoals.filter(g => g.goal_type === 'macro').map(mapGoal);
-        const sectoralGoals = empGoals.filter(g => g.goal_type === 'sectoral').map(mapGoal);
+        // Determine goal type from snapshot or base
+        const getGoalType = (p: any): string => {
+          if (p.goal_type) return p.goal_type;
+          const base = goalBaseInfo.get(p.goal_id);
+          return base?.goal_type || 'macro';
+        };
 
-        // Get monthly bonus or default to 0
+        const macroGoals = empProgress
+          .filter(p => getGoalType(p) === 'macro')
+          .map(mapProgressToGoal);
+
+        const sectoralGoals = empProgress
+          .filter(p => getGoalType(p) === 'sectoral')
+          .map(mapProgressToGoal);
+
         const bonus = bonusMap.get(emp.id);
 
         return {
@@ -147,7 +158,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
     }
   }, [user, fetchEmployees]);
 
-  // Save employee (base data only - goals and progress are separate)
+  // Save employee (base data + goals + monthly snapshots)
   const saveEmployee = async (employee: Employee): Promise<boolean> => {
     if (!isAdmin) {
       toast.error('Sem permissão', {
@@ -170,7 +181,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
         sector: employee.sector,
         reference_month: activeMonth,
         status: employee.status,
-        performance_bonus: 0, // Deprecated - now stored in employee_monthly_bonus
+        performance_bonus: 0,
         bonus_description: null,
         created_by: user?.id,
       };
@@ -182,7 +193,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
           .from('employees')
           .update(employeeData)
           .eq('id', employee.id);
-
         if (error) throw error;
       } else {
         const { data: newEmp, error } = await supabase
@@ -190,13 +200,11 @@ export function useMonthlyEmployees(selectedMonth: string) {
           .insert(employeeData)
           .select('id')
           .single();
-
         if (error) throw error;
         employeeId = newEmp.id;
       }
 
-      // Update existing goals in-place to preserve monthly progress history
-      // Fetch current goals for this employee
+      // Update existing goals in-place to preserve IDs
       const { data: existingGoals } = await supabase
         .from('goals')
         .select('id')
@@ -204,7 +212,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
 
       const existingGoalIds = new Set((existingGoals || []).map(g => g.id));
 
-      // Separate goals into updates vs new inserts
       const allGoalsWithType = [
         ...employee.macroGoals.map(g => ({ ...g, goal_type: 'macro' as const })),
         ...employee.sectoralGoals.map(g => ({ ...g, goal_type: 'sectoral' as const })),
@@ -213,9 +220,9 @@ export function useMonthlyEmployees(selectedMonth: string) {
       const goalsToUpdate = allGoalsWithType.filter(g => existingGoalIds.has(g.id));
       const goalsToInsert = allGoalsWithType.filter(g => !existingGoalIds.has(g.id));
       const incomingIds = new Set(allGoalsWithType.map(g => g.id));
-      const goalsToDelete = [...existingGoalIds].filter(id => !incomingIds.has(id));
+      const goalsToRemoveFromMonth = [...existingGoalIds].filter(id => !incomingIds.has(id));
 
-      // Update existing goals (base template data only)
+      // Update existing goals base data
       for (const goal of goalsToUpdate) {
         const { error } = await supabase
           .from('goals')
@@ -251,16 +258,24 @@ export function useMonthlyEmployees(selectedMonth: string) {
         newGoalIds = (inserted || []).map(g => g.id);
       }
 
-      // Delete removed goals (this will cascade to their monthly progress - intended)
-      if (goalsToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('goals')
-          .delete()
-          .in('id', goalsToDelete);
-        if (deleteError) throw deleteError;
+      // SOFT-DELETE goals from THIS MONTH ONLY (mark as is_deleted in goal_monthly_progress)
+      // Do NOT delete from the goals table - this preserves other months' data
+      if (goalsToRemoveFromMonth.length > 0) {
+        const { error: softDeleteError } = await supabase
+          .from('goal_monthly_progress')
+          .upsert(
+            goalsToRemoveFromMonth.map(goalId => ({
+              goal_id: goalId,
+              month: activeMonth,
+              is_deleted: true,
+              achieved: 0,
+            })),
+            { onConflict: 'goal_id,month' }
+          );
+        if (softDeleteError) throw softDeleteError;
       }
 
-      // Create monthly progress entries for ALL goals in the current month
+      // Create/update monthly snapshot entries for ALL active goals in the current month
       const allCurrentGoalIds = [
         ...goalsToUpdate.map(g => g.id),
         ...newGoalIds,
@@ -278,6 +293,13 @@ export function useMonthlyEmployees(selectedMonth: string) {
           achieved: originalGoal.achieved || 0,
           delivery_date: originalGoal.deliveryDate || null,
           observations: originalGoal.observations || null,
+          // Snapshot fields
+          goal_name: originalGoal.name,
+          goal_description: originalGoal.description || null,
+          goal_weight: originalGoal.weight,
+          goal_deadline: originalGoal.deadline,
+          goal_type: originalGoal.goal_type,
+          is_deleted: false,
         };
       });
 
@@ -285,7 +307,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
         const { error: progressError } = await supabase
           .from('goal_monthly_progress')
           .upsert(progressEntries, { onConflict: 'goal_id,month' });
-
         if (progressError) throw progressError;
       }
 
@@ -298,7 +319,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
           performance_bonus: employee.performanceBonus,
           bonus_description: employee.bonusDescription,
         }, { onConflict: 'employee_id,month' });
-
       if (bonusError) throw bonusError;
 
       await fetchEmployees();
@@ -325,7 +345,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
         .from('employees')
         .delete()
         .eq('id', employeeId);
-
       if (error) throw error;
 
       setEmployees(prev => prev.filter(e => e.id !== employeeId));
@@ -338,7 +357,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
     }
   };
 
-  // Update a single goal's monthly progress
+  // Update a single goal's monthly progress + snapshot
   const updateGoal = async (
     employeeId: string,
     goalId: string,
@@ -352,7 +371,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
     }
 
     try {
-      // Update base goal data (name, weight, deadline) - only if those fields are present
+      // Update base goal data if structural fields changed
       const goalBaseUpdates: Record<string, any> = {};
       if (updates.name !== undefined) goalBaseUpdates.name = updates.name;
       if (updates.description !== undefined) goalBaseUpdates.description = updates.description;
@@ -364,15 +383,18 @@ export function useMonthlyEmployees(selectedMonth: string) {
           .from('goals')
           .update(goalBaseUpdates)
           .eq('id', goalId);
-
         if (goalError) throw goalError;
       }
 
-      // Build only the fields that were actually updated for monthly progress
+      // Build monthly progress update with snapshot fields
       const progressUpdates: Record<string, any> = {};
       if (updates.achieved !== undefined) progressUpdates.achieved = updates.achieved;
       if ('deliveryDate' in updates) progressUpdates.delivery_date = updates.deliveryDate || null;
       if ('observations' in updates) progressUpdates.observations = updates.observations || null;
+      if (updates.name !== undefined) progressUpdates.goal_name = updates.name;
+      if (updates.description !== undefined) progressUpdates.goal_description = updates.description || null;
+      if (updates.weight !== undefined) progressUpdates.goal_weight = updates.weight;
+      if (updates.deadline !== undefined) progressUpdates.goal_deadline = updates.deadline;
 
       if (Object.keys(progressUpdates).length > 0) {
         const { error: progressError } = await supabase
@@ -382,7 +404,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
             month: activeMonth,
             ...progressUpdates,
           }, { onConflict: 'goal_id,month', ignoreDuplicates: false });
-
         if (progressError) throw progressError;
       }
 
@@ -391,10 +412,10 @@ export function useMonthlyEmployees(selectedMonth: string) {
         if (emp.id === employeeId) {
           return {
             ...emp,
-            macroGoals: emp.macroGoals.map(g => 
+            macroGoals: emp.macroGoals.map(g =>
               g.id === goalId ? { ...g, ...updates } : g
             ),
-            sectoralGoals: emp.sectoralGoals.map(g => 
+            sectoralGoals: emp.sectoralGoals.map(g =>
               g.id === goalId ? { ...g, ...updates } : g
             ),
           };
@@ -432,7 +453,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
           performance_bonus: bonus,
           bonus_description: description,
         }, { onConflict: 'employee_id,month' });
-
       if (error) throw error;
 
       setEmployees(prev => prev.map(emp => {
