@@ -224,8 +224,14 @@ export type Database = {
           achieved: number
           created_at: string
           delivery_date: string | null
+          goal_deadline: string | null
+          goal_description: string | null
           goal_id: string
+          goal_name: string | null
+          goal_type: string | null
+          goal_weight: number | null
           id: string
+          is_deleted: boolean
           last_modified_by: string | null
           month: string
           observations: string | null
@@ -235,8 +241,14 @@ export type Database = {
           achieved?: number
           created_at?: string
           delivery_date?: string | null
+          goal_deadline?: string | null
+          goal_description?: string | null
           goal_id: string
+          goal_name?: string | null
+          goal_type?: string | null
+          goal_weight?: number | null
           id?: string
+          is_deleted?: boolean
           last_modified_by?: string | null
           month: string
           observations?: string | null
@@ -246,8 +258,14 @@ export type Database = {
           achieved?: number
           created_at?: string
           delivery_date?: string | null
+          goal_deadline?: string | null
+          goal_description?: string | null
           goal_id?: string
+          goal_name?: string | null
+          goal_type?: string | null
+          goal_weight?: number | null
           id?: string
+          is_deleted?: boolean
           last_modified_by?: string | null
           month?: string
           observations?: string | null
