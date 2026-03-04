@@ -1,6 +1,7 @@
 import { Users, TrendingUp, Award, UserCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Employee, calculateTotalPerformance } from '@/types/employee';
+import { formatPercent } from '@/lib/utils';
 
 interface MainStatsCardsProps {
   employees: Employee[];
@@ -26,13 +27,13 @@ export function MainStatsCards({ employees }: MainStatsCardsProps) {
     },
     {
       title: 'Média de Desempenho',
-      value: `${averagePerformance.toFixed(1)}%`,
+      value: `${formatPercent(averagePerformance)}%`,
       icon: TrendingUp,
       color: averagePerformance >= 100 ? 'bg-performance-high text-primary-foreground' : averagePerformance >= 80 ? 'bg-performance-medium text-primary-foreground' : 'bg-performance-low text-primary-foreground',
     },
     {
       title: 'Melhor Resultado',
-      value: `${topPerformance.toFixed(1)}%`,
+      value: `${formatPercent(topPerformance)}%`,
       icon: Award,
       color: 'bg-performance-excellent text-primary-foreground',
     },

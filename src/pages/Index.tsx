@@ -35,12 +35,24 @@ const Index = () => {
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
   const [selectedGoalStatus, setSelectedGoalStatus] = useState('all');
+  const [selectedGoalName, setSelectedGoalName] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>(undefined);
   
   // Check if current month is editable
   const canEdit = isAdmin && isMonthEditable(activeMonth);
+
+  // Compute all unique goal names for the filter
+  const availableGoalNames = useMemo(() => {
+    const names = new Set<string>();
+    employees.forEach(emp => {
+      [...emp.macroGoals, ...emp.sectoralGoals].forEach(goal => {
+        names.add(goal.name);
+      });
+    });
+    return Array.from(names).sort();
+  }, [employees]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
@@ -57,10 +69,17 @@ const Index = () => {
           getGoalStatus(goal.deadline, goal.deliveryDate) === selectedGoalStatus
         );
       }
+
+      // Filter by goal name
+      let matchesGoalName = true;
+      if (selectedGoalName !== 'all') {
+        const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+        matchesGoalName = allGoals.some(goal => goal.name === selectedGoalName);
+      }
       
-      return matchesSearch && matchesSector && matchesStatus && matchesGoalStatus;
+      return matchesSearch && matchesSector && matchesStatus && matchesGoalStatus && matchesGoalName;
     });
-  }, [employees, searchTerm, selectedSector, selectedStatus, selectedGoalStatus]);
+  }, [employees, searchTerm, selectedSector, selectedStatus, selectedGoalStatus, selectedGoalName]);
 
   const handleAddEmployee = async (newEmployee: Employee) => {
     const success = await saveEmployee(newEmployee);
@@ -228,8 +247,11 @@ const Index = () => {
               onStatusChange={setSelectedStatus}
               selectedGoalStatus={selectedGoalStatus}
               onGoalStatusChange={setSelectedGoalStatus}
+              selectedGoalName={selectedGoalName}
+              onGoalNameChange={setSelectedGoalName}
               onAddEmployee={handleOpenModal}
               availableSectors={sectors}
+              availableGoalNames={availableGoalNames}
               canEdit={canEdit}
             />
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Employee, calculateTotalPerformance, getPerformanceLevel } from '@/types/employee';
-import { cn } from '@/lib/utils';
+import { cn, formatPercent } from '@/lib/utils';
 
 interface RankingTableProps {
   employees: Employee[];
@@ -122,7 +122,7 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
 
                 <div className="text-right">
                   <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
-                    {employee.totalPerformance.toFixed(1)}%
+                    {formatPercent(employee.totalPerformance)}%
                   </div>
                   {employee.performanceBonus > 0 && (
                     <span className="text-xs text-accent">+{employee.performanceBonus}% bônus</span>

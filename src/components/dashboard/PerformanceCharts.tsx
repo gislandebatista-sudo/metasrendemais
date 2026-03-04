@@ -102,7 +102,7 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
                 <XAxis type="number" domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
                 <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Desempenho']}
+                  formatter={(value: number) => [`${parseFloat(value.toFixed(10))}%`, 'Desempenho']}
                   labelFormatter={(label) => employeePerformances.find(e => e.name === label)?.fullName || label}
                 />
                 <Bar 
@@ -199,7 +199,7 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="sector" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
                 <YAxis domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Média']} />
+                <Tooltip formatter={(value: number) => [`${parseFloat(value.toFixed(10))}%`, 'Média']} />
                 <Bar 
                   dataKey="average" 
                   radius={[4, 4, 0, 0]}
@@ -268,7 +268,7 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" domain={[0, 110]} tickFormatter={(v) => `${v}%`} />
                 <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, '']} />
+                <Tooltip formatter={(value: number) => [`${parseFloat(value.toFixed(10))}%`, '']} />
                 <Legend />
                 <Bar dataKey="atual" name="Atual" fill={COLORS.primary} radius={[0, 4, 4, 0]} />
                 <Bar dataKey="meta" name="Meta Máxima" fill={COLORS.accent} radius={[0, 4, 4, 0]} opacity={0.3} />
