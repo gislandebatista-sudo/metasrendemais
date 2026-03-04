@@ -1,4 +1,4 @@
-import { Search, UserPlus, Filter, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { Search, UserPlus, Filter, CheckCircle, Clock, AlertCircle, XCircle, Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,8 +16,11 @@ interface EmployeeFilterProps {
   onStatusChange: (status: string) => void;
   selectedGoalStatus: string;
   onGoalStatusChange: (status: string) => void;
+  selectedGoalName: string;
+  onGoalNameChange: (name: string) => void;
   onAddEmployee: () => void;
   availableSectors?: string[];
+  availableGoalNames?: string[];
   canEdit?: boolean;
 }
 
@@ -40,8 +43,11 @@ export function EmployeeFilter({
   onStatusChange,
   selectedGoalStatus,
   onGoalStatusChange,
+  selectedGoalName,
+  onGoalNameChange,
   onAddEmployee,
   availableSectors = [],
+  availableGoalNames = [],
   canEdit = true,
 }: EmployeeFilterProps) {
   return (
@@ -82,6 +88,21 @@ export function EmployeeFilter({
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedGoalName} onValueChange={onGoalNameChange}>
+            <SelectTrigger className="w-[200px]">
+              <Target className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Filtrar por Meta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as Metas</SelectItem>
+              {availableGoalNames.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

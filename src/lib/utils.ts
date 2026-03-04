@@ -6,6 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Formats a number as a percentage string without any rounding.
+ * Removes trailing zeros but keeps all meaningful decimal places.
+ * E.g. 75.54 → "75,54", 100 → "100", 19.2400 → "19,24"
+ */
+export function formatPercent(value: number): string {
+  // Use a high precision to avoid floating point display issues
+  const str = parseFloat(value.toFixed(10)).toString();
+  // Replace dot with comma for Brazilian locale
+  return str.replace('.', ',');
+}
+
+/**
  * Formats a date string (YYYY-MM-DD) to Brazilian locale format (DD/MM/YYYY)
  * without timezone conversion issues.
  * This is important because date-only strings from PostgreSQL are in UTC,

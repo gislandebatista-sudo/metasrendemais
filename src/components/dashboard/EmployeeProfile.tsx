@@ -23,7 +23,7 @@ import {
   getTotalGoalsWeight,
   getUnifiedTotalWeight
 } from '@/types/employee';
-import { cn, formatDateBR } from '@/lib/utils';
+import { cn, formatDateBR, formatPercent } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
 import { ModificationHistory } from './ModificationHistory';
 
@@ -183,7 +183,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Realizado (máx: {goal.weight}%)</span>
-                      <span className="font-medium">{goal.achieved.toFixed(1)}%</span>
+                      <span className="font-medium">{formatPercent(goal.achieved)}%</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div 
@@ -207,7 +207,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                     </div>
                   ) : (
                     <div className="w-24 text-right">
-                      <span className="font-medium">{goal.achieved.toFixed(1)}%</span>
+                      <span className="font-medium">{formatPercent(goal.achieved)}%</span>
                     </div>
                   )}
                 </div>
@@ -215,7 +215,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 {/* Contribution and Observations */}
                 <div className="flex items-center justify-between text-sm border-t pt-2 mt-2">
                   <span className="text-muted-foreground">Contribuição para o Ranking</span>
-                  <span className="font-semibold text-primary">{goal.achieved.toFixed(1)}%</span>
+                  <span className="font-semibold text-primary">{formatPercent(goal.achieved)}%</span>
                 </div>
 
                 {/* Observations Button */}
@@ -356,7 +356,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <TrendingUp className="w-5 h-5" />
                 <span className="font-medium">Total Ranking</span>
               </div>
-              <span className="text-2xl font-bold">{totalPerformance.toFixed(1)}%</span>
+              <span className="text-2xl font-bold">{formatPercent(totalPerformance)}%</span>
             </div>
             <p className="text-sm opacity-80 mt-1">{getPerformanceLevelLabel(level)} (Metas + Bônus)</p>
           </div>
@@ -367,7 +367,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <Target className="w-5 h-5" />
                 <span className="font-medium">Metas Macro</span>
               </div>
-              <span className="text-2xl font-bold text-primary">{macroPerformance.toFixed(1)}%</span>
+              <span className="text-2xl font-bold text-primary">{formatPercent(macroPerformance)}%</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">{employee.macroGoals.length} metas ({macroWeight}% peso)</p>
           </div>
@@ -378,7 +378,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <Briefcase className="w-5 h-5" />
                 <span className="font-medium">Metas Setoriais</span>
               </div>
-              <span className="text-2xl font-bold">{sectoralPerformance.toFixed(1)}%</span>
+              <span className="text-2xl font-bold">{formatPercent(sectoralPerformance)}%</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">{employee.sectoralGoals.length} metas ({sectoralWeight}% peso)</p>
           </div>

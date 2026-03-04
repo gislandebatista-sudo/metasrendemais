@@ -15,7 +15,7 @@ import {
   getDelayedGoalsCount,
   getNotDeliveredGoalsCount
 } from '@/types/employee';
-import { formatDateBR } from '@/lib/utils';
+import { formatDateBR, formatPercent } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -169,9 +169,9 @@ export function ExportTab({ employees }: ExportTabProps) {
       doc.setFontSize(10);
       doc.text(`Total de Colaboradores: ${stats.totalEmployees} (${stats.activeEmployees} ativos)`, 15, yPos);
       yPos += 6;
-      doc.text(`Média de Desempenho: ${stats.averagePerformance.toFixed(1)}%`, 15, yPos);
+      doc.text(`Média de Desempenho: ${formatPercent(stats.averagePerformance)}%`, 15, yPos);
       yPos += 6;
-      doc.text(`Melhor Resultado: ${stats.topPerformance.toFixed(1)}%`, 15, yPos);
+      doc.text(`Melhor Resultado: ${formatPercent(stats.topPerformance)}%`, 15, yPos);
       yPos += 6;
       doc.text(`Colaboradores acima de 100%: ${stats.above100Count}`, 15, yPos);
       yPos += 6;
@@ -199,7 +199,7 @@ export function ExportTab({ employees }: ExportTabProps) {
         doc.setTextColor(index < 3 ? 249 : 60, index < 3 ? 115 : 60, index < 3 ? 22 : 60);
         doc.text(`${index + 1}º ${rankBadge} ${emp.name} - ${emp.sector}`, 15, yPos);
         doc.setTextColor(60);
-        doc.text(`${emp.totalPerf.toFixed(1)}%`, pageWidth - 30, yPos);
+        doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 30, yPos);
         yPos += 5;
       });
       yPos += 10;
@@ -218,7 +218,7 @@ export function ExportTab({ employees }: ExportTabProps) {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
         doc.text(`${ranking}º | ${emp.name}`, 15, yPos + 2);
-        doc.text(`${emp.totalPerf.toFixed(1)}%`, pageWidth - 25, yPos + 2);
+        doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 25, yPos + 2);
         yPos += 15;
 
         // Employee Info
@@ -246,7 +246,7 @@ export function ExportTab({ employees }: ExportTabProps) {
               doc.addPage();
               yPos = 20;
             }
-            doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${goal.achieved.toFixed(1)}% | ${goal.status}`, 15, yPos);
+            doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${formatPercent(goal.achieved)}% | ${goal.status}`, 15, yPos);
             yPos += 5;
             if (goal.observations) {
               doc.setTextColor(120);
@@ -257,7 +257,7 @@ export function ExportTab({ employees }: ExportTabProps) {
             }
           });
         }
-        doc.text(`  Subtotal Macro: ${emp.macroPerf.toFixed(1)}%`, 15, yPos);
+        doc.text(`  Subtotal Macro: ${formatPercent(emp.macroPerf)}%`, 15, yPos);
         yPos += 8;
 
         // Sectoral Goals
@@ -277,7 +277,7 @@ export function ExportTab({ employees }: ExportTabProps) {
               doc.addPage();
               yPos = 20;
             }
-            doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${goal.achieved.toFixed(1)}% | ${goal.status}`, 15, yPos);
+            doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${formatPercent(goal.achieved)}% | ${goal.status}`, 15, yPos);
             yPos += 5;
             if (goal.observations) {
               doc.setTextColor(120);
@@ -288,7 +288,7 @@ export function ExportTab({ employees }: ExportTabProps) {
             }
           });
         }
-        doc.text(`  Subtotal Setorial: ${emp.sectoralPerf.toFixed(1)}%`, 15, yPos);
+        doc.text(`  Subtotal Setorial: ${formatPercent(emp.sectoralPerf)}%`, 15, yPos);
         yPos += 8;
 
         // Summary
@@ -300,7 +300,7 @@ export function ExportTab({ employees }: ExportTabProps) {
         doc.text(`Bônus: +${emp.bonus}%${emp.bonusDescription ? ` (${emp.bonusDescription})` : ''}`, 15, yPos + 10);
         doc.setFontSize(12);
         doc.setTextColor(249, 115, 22);
-        doc.text(`TOTAL NO RANKING: ${emp.totalPerf.toFixed(1)}%`, pageWidth - 60, yPos + 7);
+        doc.text(`TOTAL NO RANKING: ${formatPercent(emp.totalPerf)}%`, pageWidth - 60, yPos + 7);
         yPos += 30;
       });
 
@@ -331,8 +331,8 @@ export function ExportTab({ employees }: ExportTabProps) {
         ['', ''],
         ['Total de Colaboradores', stats.totalEmployees],
         ['Colaboradores Ativos', stats.activeEmployees],
-        ['Média de Desempenho (%)', stats.averagePerformance.toFixed(1)],
-        ['Melhor Resultado (%)', stats.topPerformance.toFixed(1)],
+        ['Média de Desempenho (%)', formatPercent(stats.averagePerformance)],
+        ['Melhor Resultado (%)', formatPercent(stats.topPerformance)],
         ['Colaboradores Acima de 100%', stats.above100Count],
         ['Metas em Atraso', stats.totalDelayedGoals],
         ['Metas Não Entregues', stats.totalNotDelivered],
@@ -351,7 +351,7 @@ export function ExportTab({ employees }: ExportTabProps) {
           emp.sector,
           emp.role,
           emp.status === 'active' ? 'Ativo' : 'Inativo',
-          emp.totalPerf.toFixed(1),
+          formatPercent(emp.totalPerf),
         ])
       ];
       const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
@@ -466,7 +466,7 @@ export function ExportTab({ employees }: ExportTabProps) {
               <p className="text-xs text-muted-foreground">Colaboradores Ativos</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{stats.averagePerformance.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-primary">{formatPercent(stats.averagePerformance)}%</p>
               <p className="text-xs text-muted-foreground">Média Desempenho</p>
             </div>
             <div className="text-center">
@@ -493,7 +493,7 @@ export function ExportTab({ employees }: ExportTabProps) {
                       <span className="font-bold text-primary">{index + 1}º</span>
                       <span>{emp.name}</span>
                     </span>
-                    <span className="font-semibold">{emp.totalPerf.toFixed(1)}%</span>
+                    <span className="font-semibold">{formatPercent(emp.totalPerf)}%</span>
                   </div>
                 ))}
               </div>
@@ -572,8 +572,8 @@ export function ExportTab({ employees }: ExportTabProps) {
                             <p className="text-xs text-muted-foreground">{emp.role} • {emp.sector}</p>
                           </div>
                         </td>
-                        <td className="text-center p-2">{macroPerf.toFixed(1)}%</td>
-                        <td className="text-center p-2">{sectoralPerf.toFixed(1)}%</td>
+                        <td className="text-center p-2">{formatPercent(macroPerf)}%</td>
+                        <td className="text-center p-2">{formatPercent(sectoralPerf)}%</td>
                         <td className="text-center p-2">+{emp.performanceBonus}%</td>
                         <td className="text-center p-2">
                           {delayed > 0 ? (
@@ -582,7 +582,7 @@ export function ExportTab({ employees }: ExportTabProps) {
                             <span className="text-muted-foreground">0</span>
                           )}
                         </td>
-                        <td className="text-center p-2 font-bold text-primary">{emp.totalPerf.toFixed(1)}%</td>
+                        <td className="text-center p-2 font-bold text-primary">{formatPercent(emp.totalPerf)}%</td>
                       </tr>
                     );
                   })}
