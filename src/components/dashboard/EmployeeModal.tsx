@@ -577,6 +577,9 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
             </div>
           </div>
 
+          {/* Access Management Section - Only for editing existing employees */}
+          {employee && <EmployeeAccessSection employeeId={employee.id} employeeName={employee.name} />}
+
           {/* Goals Section with Tabs */}
           <Tabs defaultValue="macro" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
