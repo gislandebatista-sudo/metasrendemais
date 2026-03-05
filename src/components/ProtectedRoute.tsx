@@ -4,10 +4,11 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: 'admin' | 'viewer' | 'colaborador';
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { user, isLoading, userRole, isColaborador, isAdmin } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,6 +23,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect colaborador away from admin routes
+  if (isColaborador && !requiredRole) {
+    return <Navigate to="/colaborador" replace />;
+  }
+
+  // Redirect non-colaboradores away from colaborador route
+  if (requiredRole === 'colaborador' && !isColaborador && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Admin can access everything
+  if (requiredRole === 'colaborador' && isAdmin) {
+    return <>{children}</>;
   }
 
   return <>{children}</>;

@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'admin' | 'viewer' | null;
+type UserRole = 'admin' | 'viewer' | 'colaborador' | null;
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +10,7 @@ interface AuthContextType {
   userRole: UserRole;
   isLoading: boolean;
   isAdmin: boolean;
+  isColaborador: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -45,13 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer role fetch with setTimeout to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
@@ -63,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -114,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userRole,
     isLoading,
     isAdmin: userRole === 'admin',
+    isColaborador: userRole === 'colaborador',
     signIn,
     signUp,
     signOut,
