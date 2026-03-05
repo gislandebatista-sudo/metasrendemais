@@ -8,16 +8,35 @@ import { cn, formatPercent } from '@/lib/utils';
 interface RankingTableProps {
   employees: Employee[];
   onSelectEmployee: (employee: Employee) => void;
+  selectedGoalName?: string;
 }
 
-export function RankingTable({ employees, onSelectEmployee }: RankingTableProps) {
-  // Show ALL employees, sorted by performance (no filtering by status for display)
+export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: RankingTableProps) {
+  const isGoalFiltered = selectedGoalName && selectedGoalName !== 'all';
+
+  // Compute goal-specific percentage for each employee when filtering
+  const getGoalAchieved = (emp: Employee): number => {
+    if (!isGoalFiltered) return calculateTotalPerformance(emp);
+    const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+    const goal = allGoals.find(g => g.name === selectedGoalName);
+    return goal ? goal.achieved : 0;
+  };
+
+  const getGoalWeight = (emp: Employee): number | null => {
+    if (!isGoalFiltered) return null;
+    const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+    const goal = allGoals.find(g => g.name === selectedGoalName);
+    return goal ? goal.weight : null;
+  };
+
   const rankedEmployees = [...employees]
     .map(emp => ({
       ...emp,
-      totalPerformance: calculateTotalPerformance(emp)
+      totalPerformance: calculateTotalPerformance(emp),
+      goalAchieved: getGoalAchieved(emp),
+      goalWeight: getGoalWeight(emp),
     }))
-    .sort((a, b) => b.totalPerformance - a.totalPerformance);
+    .sort((a, b) => b.goalAchieved - a.goalAchieved);
 
   const getRankIcon = (position: number) => {
     switch (position) {
@@ -65,16 +84,20 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Trophy className="w-5 h-5 text-accent" />
-          Ranking Geral
+          {isGoalFiltered ? `Meta: ${selectedGoalName}` : 'Ranking Geral'}
         </CardTitle>
+        {isGoalFiltered && (
+          <p className="text-sm text-muted-foreground">Exibindo porcentagem individual da meta selecionada</p>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
           {rankedEmployees.map((employee, index) => {
-            const level = getPerformanceLevel(employee.totalPerformance);
+            const displayValue = isGoalFiltered ? employee.goalAchieved : employee.totalPerformance;
+            const level = getPerformanceLevel(displayValue);
             const isTopThree = index < 3;
             const isTopTen = index < 10;
-            const isAbove100 = employee.totalPerformance >= 100;
+            const isAbove100 = displayValue >= 100;
             const isInactive = employee.status === 'inactive';
 
             return (
@@ -122,9 +145,12 @@ export function RankingTable({ employees, onSelectEmployee }: RankingTableProps)
 
                 <div className="text-right">
                   <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
-                    {formatPercent(employee.totalPerformance)}%
+                    {formatPercent(displayValue)}%
                   </div>
-                  {employee.performanceBonus > 0 && (
+                  {isGoalFiltered && employee.goalWeight !== null && (
+                    <span className="text-xs text-muted-foreground">Peso: {employee.goalWeight}%</span>
+                  )}
+                  {!isGoalFiltered && employee.performanceBonus > 0 && (
                     <span className="text-xs text-accent">+{employee.performanceBonus}% bônus</span>
                   )}
                 </div>

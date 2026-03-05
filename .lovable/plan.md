@@ -1,33 +1,40 @@
 
-# Fix Goal Name Filtering to Show Individual Goal Percentages
 
-## Problem
-When filtering by a specific goal (e.g., "DNA JVM"), the system correctly filters employees who have that goal, but the **RankingTable still shows total performance** instead of the specific goal's percentage. Users need to see each employee's individual result for the selected goal.
+# Plan: Goal Name Filter, Remove Rounding, Fix Ranking Calculation
 
-## Solution
+## 1. Add Goal Name Filter to EmployeeFilter
 
-### 1. Pass filtered goal context to RankingTable
-In `Index.tsx`, when `selectedGoalName !== 'all'`, compute each filtered employee's achieved percentage for that specific goal and pass it to `RankingTable` as additional context.
+**What**: Add a new dropdown/select in the filter bar that lists all unique goal names across employees. When a goal name is selected (e.g., "DNA JVM"), only employees who have that goal are shown, displaying their individual percentages for that specific goal.
 
-### 2. Update RankingTable to display goal-specific data
-When a goal name filter is active:
-- Sort employees by the **selected goal's achieved percentage** (not total performance)
-- Display the **goal-specific percentage** instead of `totalPerformance`
-- Show a subtitle indicating which goal is being viewed (e.g., "Meta: DNA JVM")
+**How**:
+- In `Index.tsx`: Add state `selectedGoalName` and compute a list of all unique goal names from all employees' goals (macro + sectoral). Pass to `EmployeeFilter`.
+- In `EmployeeFilter.tsx`: Add a new `Select` dropdown for goal name filtering, listing all available goal names.
+- Filter logic in `Index.tsx`: When a goal name is selected, filter `employees` to only those who have a goal matching that name.
 
-### 3. Implementation Details
+## 2. Remove All Rounding from Percentages
 
-**`src/pages/Index.tsx`**:
-- Compute a `Map<employeeId, achievedValue>` for the selected goal name
-- Pass `selectedGoalName` and the goal percentages map to `RankingTable`
+**What**: Remove `.toFixed(1)` and any rounding throughout the UI. Display exact decimal values as stored.
 
-**`src/components/dashboard/RankingTable.tsx`**:
-- Accept optional props: `selectedGoalName` and `goalPercentages: Map<string, number>`
-- When `selectedGoalName` is set (not 'all'):
-  - Use goal-specific percentage for display and sorting
-  - Update header to show filtered goal name
-  - Show goal weight alongside achieved value
+**Files affected**:
+- `src/components/dashboard/EmployeeProfile.tsx` — Lines 186, 187, 209, 218, 359, 370, 381: Replace `.toFixed(1)` with direct value display (no rounding). Use a helper to show the raw number without trailing zeros where appropriate.
+- `src/components/dashboard/RankingTable.tsx` — Line with `employee.totalPerformance.toFixed(1)`: Remove rounding.
+- `src/types/employee.ts` — `calculateTotalPerformance` and `calculateGoalsPerformance`: Ensure no rounding occurs (currently they don't round, which is correct).
+- Check `MainStatsCards.tsx`, `DashboardStatsCards.tsx`, `PerformanceCharts.tsx`, `ExportTab.tsx` for any `.toFixed()` calls.
 
-### Files to modify
-1. `src/pages/Index.tsx` — compute goal-specific percentages, pass to RankingTable
-2. `src/components/dashboard/RankingTable.tsx` — conditional display for goal-specific mode
+**Approach**: Create a utility function `formatPercent(value: number): string` that displays the number with all its meaningful decimal places (no trailing zeros, no forced rounding). Use it everywhere percentages are displayed.
+
+## 3. Fix Ranking Calculation Display
+
+The calculation logic in `calculateTotalPerformance` already does a direct sum without rounding. The issue is purely in the **display** layer (`.toFixed(1)` calls). Fixing item #2 above automatically fixes this.
+
+Verify: `75.54 + 19.24 = 94.78` — the `calculateTotalPerformance` function sums `macroSum + sectoralSum + bonus` and caps at 105. No rounding in the function itself. The fix is removing `.toFixed(1)` from the display.
+
+## Files to Modify
+
+1. **`src/lib/utils.ts`** — Add `formatPercent()` utility
+2. **`src/components/dashboard/EmployeeFilter.tsx`** — Add goal name select dropdown
+3. **`src/pages/Index.tsx`** — Add `selectedGoalName` state and filtering logic, compute available goal names, pass props
+4. **`src/components/dashboard/EmployeeProfile.tsx`** — Replace all `.toFixed(1)` with `formatPercent()`
+5. **`src/components/dashboard/RankingTable.tsx`** — Replace `.toFixed(1)` with `formatPercent()`
+6. **`src/components/dashboard/MainStatsCards.tsx`**, **`DashboardStatsCards.tsx`**, **`PerformanceCharts.tsx`**, **`ExportTab.tsx`** — Audit and replace any rounding
+
