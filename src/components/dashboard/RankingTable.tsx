@@ -8,16 +8,35 @@ import { cn, formatPercent } from '@/lib/utils';
 interface RankingTableProps {
   employees: Employee[];
   onSelectEmployee: (employee: Employee) => void;
+  selectedGoalName?: string;
 }
 
-export function RankingTable({ employees, onSelectEmployee }: RankingTableProps) {
-  // Show ALL employees, sorted by performance (no filtering by status for display)
+export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: RankingTableProps) {
+  const isGoalFiltered = selectedGoalName && selectedGoalName !== 'all';
+
+  // Compute goal-specific percentage for each employee when filtering
+  const getGoalAchieved = (emp: Employee): number => {
+    if (!isGoalFiltered) return calculateTotalPerformance(emp);
+    const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+    const goal = allGoals.find(g => g.name === selectedGoalName);
+    return goal ? goal.achieved : 0;
+  };
+
+  const getGoalWeight = (emp: Employee): number | null => {
+    if (!isGoalFiltered) return null;
+    const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
+    const goal = allGoals.find(g => g.name === selectedGoalName);
+    return goal ? goal.weight : null;
+  };
+
   const rankedEmployees = [...employees]
     .map(emp => ({
       ...emp,
-      totalPerformance: calculateTotalPerformance(emp)
+      totalPerformance: calculateTotalPerformance(emp),
+      goalAchieved: getGoalAchieved(emp),
+      goalWeight: getGoalWeight(emp),
     }))
-    .sort((a, b) => b.totalPerformance - a.totalPerformance);
+    .sort((a, b) => b.goalAchieved - a.goalAchieved);
 
   const getRankIcon = (position: number) => {
     switch (position) {

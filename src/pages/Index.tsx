@@ -260,6 +260,7 @@ const Index = () => {
                 <RankingTable
                   employees={filteredEmployees}
                   onSelectEmployee={setSelectedEmployee}
+                  selectedGoalName={selectedGoalName}
                 />
               </div>
 
