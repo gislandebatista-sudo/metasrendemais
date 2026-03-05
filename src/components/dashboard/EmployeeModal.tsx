@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar, Upload, AlertTriangle, Image } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar, Upload, AlertTriangle, Image, KeyRound, Loader2, UserX, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,8 @@ import { Employee, Goal, getTotalGoalsWeight } from '@/types/employee';
 import { months } from '@/data/mockEmployees';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 interface EmployeeModalProps {
   open: boolean;
