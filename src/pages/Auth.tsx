@@ -14,7 +14,7 @@ const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'A senha deve ter no mínimo 6 caracteres');
 
 export default function Auth() {
-  // user and isColaborador are used below after the redirect logic
+  const { user, isLoading, isColaborador, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
