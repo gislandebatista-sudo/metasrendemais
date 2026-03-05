@@ -447,6 +447,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_employee_id_for_user: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -456,6 +457,7 @@ export type Database = {
       }
       initialize_month: { Args: { target_month: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_colaborador: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "viewer" | "colaborador"
