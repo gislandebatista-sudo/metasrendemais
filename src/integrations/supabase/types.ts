@@ -77,6 +77,7 @@ export type Database = {
           sector: string
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           bonus_description?: string | null
@@ -92,6 +93,7 @@ export type Database = {
           sector: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           bonus_description?: string | null
@@ -107,6 +109,7 @@ export type Database = {
           sector?: string
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -455,7 +458,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "viewer"
+      app_role: "admin" | "viewer" | "colaborador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -583,7 +586,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "viewer"],
+      app_role: ["admin", "viewer", "colaborador"],
     },
   },
 } as const
