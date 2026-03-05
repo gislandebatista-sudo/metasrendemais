@@ -30,7 +30,6 @@ export default function Auth() {
   const [signupFullName, setSignupFullName] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
-  const { user, isLoading, isColaborador, signIn, signUp } = useAuth();
 
   // Redirect if already authenticated
   useEffect(() => {
