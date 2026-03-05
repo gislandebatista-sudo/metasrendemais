@@ -84,16 +84,20 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Trophy className="w-5 h-5 text-accent" />
-          Ranking Geral
+          {isGoalFiltered ? `Meta: ${selectedGoalName}` : 'Ranking Geral'}
         </CardTitle>
+        {isGoalFiltered && (
+          <p className="text-sm text-muted-foreground">Exibindo porcentagem individual da meta selecionada</p>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
           {rankedEmployees.map((employee, index) => {
-            const level = getPerformanceLevel(employee.totalPerformance);
+            const displayValue = isGoalFiltered ? employee.goalAchieved : employee.totalPerformance;
+            const level = getPerformanceLevel(displayValue);
             const isTopThree = index < 3;
             const isTopTen = index < 10;
-            const isAbove100 = employee.totalPerformance >= 100;
+            const isAbove100 = displayValue >= 100;
             const isInactive = employee.status === 'inactive';
 
             return (
@@ -141,9 +145,12 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
 
                 <div className="text-right">
                   <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
-                    {formatPercent(employee.totalPerformance)}%
+                    {formatPercent(displayValue)}%
                   </div>
-                  {employee.performanceBonus > 0 && (
+                  {isGoalFiltered && employee.goalWeight !== null && (
+                    <span className="text-xs text-muted-foreground">Peso: {employee.goalWeight}%</span>
+                  )}
+                  {!isGoalFiltered && employee.performanceBonus > 0 && (
                     <span className="text-xs text-accent">+{employee.performanceBonus}% bônus</span>
                   )}
                 </div>
