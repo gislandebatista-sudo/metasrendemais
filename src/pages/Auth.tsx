@@ -14,7 +14,7 @@ const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'A senha deve ter no mínimo 6 caracteres');
 
 export default function Auth() {
-  const { user, isLoading, signIn, signUp } = useAuth();
+  const { user, isLoading, isColaborador, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,12 +30,17 @@ export default function Auth() {
   const [signupFullName, setSignupFullName] = useState('');
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
 
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && user) {
-      navigate('/', { replace: true });
+      if (isColaborador) {
+        navigate('/colaborador', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, isColaborador, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

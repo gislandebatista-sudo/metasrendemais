@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar, Upload, AlertTriangle, Image } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Target, Briefcase, Gift, Calendar, Upload, AlertTriangle, Image, KeyRound, Loader2, UserX, RotateCcw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,237 @@ import { Employee, Goal, getTotalGoalsWeight } from '@/types/employee';
 import { months } from '@/data/mockEmployees';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 interface EmployeeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (employee: Employee) => void;
   employee?: Employee;
+}
+
+// Employee Access Management Sub-component
+function EmployeeAccessSection({ employeeId, employeeName }: { employeeId: string; employeeName: string }) {
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessPassword, setAccessPassword] = useState('');
+  const [linkedUserId, setLinkedUserId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(true);
+  const [resetPassword, setResetPassword] = useState('');
+
+  useEffect(() => {
+    // Check if employee already has linked user
+    const checkAccess = async () => {
+      setIsLoadingAccess(true);
+      const { data } = await supabase
+        .from('employees')
+        .select('user_id')
+        .eq('id', employeeId)
+        .single();
+      
+      setLinkedUserId(data?.user_id || null);
+      setIsLoadingAccess(false);
+    };
+    checkAccess();
+  }, [employeeId]);
+
+  const handleCreateAccess = async () => {
+    if (!accessEmail || !accessPassword) {
+      toast.error('Email e senha são obrigatórios');
+      return;
+    }
+    if (accessPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-employee-auth', {
+        body: {
+          action: 'create_user',
+          email: accessEmail,
+          password: accessPassword,
+          full_name: employeeName,
+          employee_id: employeeId,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setLinkedUserId(data.user_id);
+      setAccessEmail('');
+      setAccessPassword('');
+      toast.success('Acesso criado com sucesso!', {
+        description: `O colaborador pode fazer login com ${accessEmail}`,
+      });
+    } catch (err: any) {
+      toast.error('Erro ao criar acesso', { description: err.message });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPassword || resetPassword.length < 6) {
+      toast.error('A nova senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-employee-auth', {
+        body: {
+          action: 'reset_password',
+          user_id: linkedUserId,
+          new_password: resetPassword,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setResetPassword('');
+      toast.success('Senha resetada com sucesso!');
+    } catch (err: any) {
+      toast.error('Erro ao resetar senha', { description: err.message });
+    }
+  };
+
+  const handleToggleAccess = async (disable: boolean) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-employee-auth', {
+        body: {
+          action: 'toggle_access',
+          user_id: linkedUserId,
+          disable,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(disable ? 'Acesso desativado' : 'Acesso reativado');
+    } catch (err: any) {
+      toast.error('Erro ao alterar acesso', { description: err.message });
+    }
+  };
+
+  const handleRemoveAccess = async () => {
+    if (!confirm('Tem certeza que deseja remover o acesso deste colaborador? O usuário será excluído.')) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-employee-auth', {
+        body: {
+          action: 'delete_user',
+          user_id: linkedUserId,
+          employee_id: employeeId,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setLinkedUserId(null);
+      toast.success('Acesso removido com sucesso!');
+    } catch (err: any) {
+      toast.error('Erro ao remover acesso', { description: err.message });
+    }
+  };
+
+  if (isLoadingAccess) {
+    return (
+      <div className="p-4 border rounded-lg">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm text-muted-foreground">Verificando acesso...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 border rounded-lg bg-primary/5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-primary" />
+          <Label className="text-base font-semibold">Acesso do Colaborador</Label>
+        </div>
+        {linkedUserId && (
+          <Badge variant="default" className="bg-performance-high">Acesso Ativo</Badge>
+        )}
+      </div>
+
+      {!linkedUserId ? (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Crie credenciais para que o colaborador acesse seu painel individual.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Email</Label>
+              <Input
+                type="email"
+                placeholder="colaborador@email.com"
+                value={accessEmail}
+                onChange={(e) => setAccessEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Senha (mín. 6 caracteres)</Label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={accessPassword}
+                onChange={(e) => setAccessPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <Button
+            onClick={handleCreateAccess}
+            disabled={isCreating || !accessEmail || !accessPassword}
+            className="gap-2"
+            size="sm"
+          >
+            {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+            Criar Acesso
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <Input
+                type="password"
+                placeholder="Nova senha"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                className="h-8"
+              />
+              <Button size="sm" variant="outline" onClick={handleResetPassword} className="gap-1 shrink-0">
+                <RotateCcw className="w-3 h-3" />
+                Resetar Senha
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleToggleAccess(true)} className="gap-1">
+              <UserX className="w-3 h-3" />
+              Desativar
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleToggleAccess(false)} className="gap-1">
+              Reativar
+            </Button>
+            <Button size="sm" variant="destructive" onClick={handleRemoveAccess} className="gap-1">
+              <Trash2 className="w-3 h-3" />
+              Remover Acesso
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 const currentYear = new Date().getFullYear();
@@ -574,6 +799,9 @@ export function EmployeeModal({ open, onOpenChange, onSave, employee }: Employee
               </div>
             </div>
           </div>
+
+          {/* Access Management Section - Only for editing existing employees */}
+          {employee && <EmployeeAccessSection employeeId={employee.id} employeeName={employee.name} />}
 
           {/* Goals Section with Tabs */}
           <Tabs defaultValue="macro" className="w-full">
