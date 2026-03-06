@@ -1,40 +1,98 @@
 
 
-# Plan: Goal Name Filter, Remove Rounding, Fix Ranking Calculation
+# Melhorias no Painel do Colaborador
 
-## 1. Add Goal Name Filter to EmployeeFilter
+## Resumo
+Atualizar `ColaboradorDashboard.tsx` para incluir: filtragem mensal correta (já parcialmente funcional), posição no ranking, cards de metas em atraso/não entregues, e exportação individual.
 
-**What**: Add a new dropdown/select in the filter bar that lists all unique goal names across employees. When a goal name is selected (e.g., "DNA JVM"), only employees who have that goal are shown, displaying their individual percentages for that specific goal.
+## 1. Filtragem por Mês (Ajuste)
+O `ColaboradorDashboard` já usa `selectedMonth` e busca `goal_monthly_progress` filtrado pelo mês. O problema atual: mostra metas base mesmo sem snapshot no mês. **Corrigir para mostrar apenas metas com snapshot no mês selecionado** (filtrar `goalsData` para incluir somente as que possuem entrada em `monthlyProgress` com `is_deleted = false`).
 
-**How**:
-- In `Index.tsx`: Add state `selectedGoalName` and compute a list of all unique goal names from all employees' goals (macro + sectoral). Pass to `EmployeeFilter`.
-- In `EmployeeFilter.tsx`: Add a new `Select` dropdown for goal name filtering, listing all available goal names.
-- Filter logic in `Index.tsx`: When a goal name is selected, filter `employees` to only those who have a goal matching that name.
+**Arquivo:** `src/pages/ColaboradorDashboard.tsx` -- ajustar `mapGoals` para filtrar somente goals com progresso mensal existente e não deletado.
 
-## 2. Remove All Rounding from Percentages
+## 2. Posição no Ranking
+Buscar todos os colaboradores e suas performances no mês para calcular a posição. Isso deve ser feito via uma query segura -- como o RLS para `colaborador` bloqueia a lista de employees, precisamos de uma **edge function** ou **database function** (security definer) que retorne apenas a posição e pontuação do usuário.
 
-**What**: Remove `.toFixed(1)` and any rounding throughout the UI. Display exact decimal values as stored.
+**Abordagem:** Criar uma database function `get_my_ranking_position(target_month varchar)` que:
+- Calcula performance de todos os colaboradores ativos no mês
+- Retorna apenas: `position`, `total_participants`, `my_score`
+- Usa `SECURITY DEFINER` para acessar dados de todos sem expor dados individuais
 
-**Files affected**:
-- `src/components/dashboard/EmployeeProfile.tsx` — Lines 186, 187, 209, 218, 359, 370, 381: Replace `.toFixed(1)` with direct value display (no rounding). Use a helper to show the raw number without trailing zeros where appropriate.
-- `src/components/dashboard/RankingTable.tsx` — Line with `employee.totalPerformance.toFixed(1)`: Remove rounding.
-- `src/types/employee.ts` — `calculateTotalPerformance` and `calculateGoalsPerformance`: Ensure no rounding occurs (currently they don't round, which is correct).
-- Check `MainStatsCards.tsx`, `DashboardStatsCards.tsx`, `PerformanceCharts.tsx`, `ExportTab.tsx` for any `.toFixed()` calls.
+**Arquivos:**
+- **Migration SQL** -- criar função `get_my_ranking_position`
+- **`src/pages/ColaboradorDashboard.tsx`** -- chamar a função via `supabase.rpc()` e exibir card com posição
 
-**Approach**: Create a utility function `formatPercent(value: number): string` that displays the number with all its meaningful decimal places (no trailing zeros, no forced rounding). Use it everywhere percentages are displayed.
+## 3. Cards de Metas em Atraso e Não Entregues
+Reutilizar a lógica de `DashboardStatsCards` mas filtrada para o colaborador logado.
 
-## 3. Fix Ranking Calculation Display
+**Arquivo:** `src/pages/ColaboradorDashboard.tsx` -- adicionar seção com cards mostrando:
+- Quantidade de metas em atraso (com lista detalhada ao clicar)
+- Quantidade de metas não entregues (com lista detalhada ao clicar)
+- Usar `getGoalStatus`, `getDelayedGoalsCount`, `getNotDeliveredGoalsCount` do `types/employee.ts`
+- Reutilizar `GoalDetailsModal` para exibir detalhes
 
-The calculation logic in `calculateTotalPerformance` already does a direct sum without rounding. The issue is purely in the **display** layer (`.toFixed(1)` calls). Fixing item #2 above automatically fixes this.
+## 4. Exportação Individual (PDF/Excel)
+Adaptar a lógica de `ExportTab` para funcionar com um único colaborador.
 
-Verify: `75.54 + 19.24 = 94.78` — the `calculateTotalPerformance` function sums `macroSum + sectoralSum + bonus` and caps at 105. No rounding in the function itself. The fix is removing `.toFixed(1)` from the display.
+**Arquivo:** `src/pages/ColaboradorDashboard.tsx` -- adicionar botões de exportação PDF e Excel que:
+- Exportam apenas os dados do colaborador logado
+- Respeitam o mês selecionado
+- Incluem: metas, percentuais, status, posição no ranking
+- Usar `jspdf` e `xlsx` (já instalados)
 
-## Files to Modify
+## 5. Ranking via Database Function
 
-1. **`src/lib/utils.ts`** — Add `formatPercent()` utility
-2. **`src/components/dashboard/EmployeeFilter.tsx`** — Add goal name select dropdown
-3. **`src/pages/Index.tsx`** — Add `selectedGoalName` state and filtering logic, compute available goal names, pass props
-4. **`src/components/dashboard/EmployeeProfile.tsx`** — Replace all `.toFixed(1)` with `formatPercent()`
-5. **`src/components/dashboard/RankingTable.tsx`** — Replace `.toFixed(1)` with `formatPercent()`
-6. **`src/components/dashboard/MainStatsCards.tsx`**, **`DashboardStatsCards.tsx`**, **`PerformanceCharts.tsx`**, **`ExportTab.tsx`** — Audit and replace any rounding
+```sql
+CREATE OR REPLACE FUNCTION public.get_my_ranking_position(target_month varchar)
+RETURNS TABLE(position bigint, total_participants bigint, my_score numeric)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  my_employee_id uuid;
+  my_perf numeric;
+BEGIN
+  SELECT id INTO my_employee_id FROM employees WHERE user_id = auth.uid();
+  IF my_employee_id IS NULL THEN RETURN; END IF;
+
+  -- Calculate my score from monthly progress
+  SELECT COALESCE(SUM(LEAST(gmp.achieved, gmp.goal_weight)), 0)
+    + COALESCE((SELECT emb.performance_bonus FROM employee_monthly_bonus emb 
+                WHERE emb.employee_id = my_employee_id AND emb.month = target_month), 0)
+  INTO my_perf
+  FROM goal_monthly_progress gmp
+  JOIN goals g ON gmp.goal_id = g.id
+  WHERE g.employee_id = my_employee_id AND gmp.month = target_month AND gmp.is_deleted = false;
+
+  -- Count how many active employees score higher
+  RETURN QUERY
+  WITH scores AS (
+    SELECT e.id as eid,
+      LEAST(
+        COALESCE(SUM(LEAST(gmp.achieved, gmp.goal_weight)), 0)
+        + COALESCE((SELECT emb.performance_bonus FROM employee_monthly_bonus emb 
+                    WHERE emb.employee_id = e.id AND emb.month = target_month), 0),
+        105
+      ) as score
+    FROM employees e
+    LEFT JOIN goals g ON g.employee_id = e.id
+    LEFT JOIN goal_monthly_progress gmp ON gmp.goal_id = g.id AND gmp.month = target_month AND gmp.is_deleted = false
+    WHERE e.status = 'active'
+    GROUP BY e.id
+  )
+  SELECT 
+    (SELECT COUNT(*) + 1 FROM scores WHERE scores.score > LEAST(my_perf, 105))::bigint,
+    (SELECT COUNT(*) FROM scores)::bigint,
+    LEAST(my_perf, 105);
+END;
+$$;
+```
+
+## Arquivos a Modificar
+1. **Migration SQL** -- `get_my_ranking_position` function
+2. **`src/pages/ColaboradorDashboard.tsx`** -- reescrever com: ranking card, stats cards (atraso/não entregues), export buttons, filtragem mensal corrigida
+
+## Segurança
+- A function `get_my_ranking_position` usa `auth.uid()` internamente, impossibilitando manipulação
+- RLS existente já garante isolamento dos dados de metas/bonus
+- Exportação usa apenas dados já carregados no frontend (filtrados por RLS)
 
