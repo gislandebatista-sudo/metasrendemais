@@ -1,19 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Target, User } from 'lucide-react';
+import { Loader2, Target, User, Trophy, AlertTriangle, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Employee, Goal } from '@/types/employee';
+import { Employee, Goal, calculateTotalPerformance, calculateGoalsPerformance, getTotalGoalsWeight, getGoalStatus, getStatusLabel, getDelayedGoalsCount, getNotDeliveredGoalsCount } from '@/types/employee';
 import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
+import { GoalDetailsModal } from '@/components/dashboard/GoalDetailsModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import logoWhite from '@/assets/logo-rende-white.png';
 import logo from '@/assets/logo-rende-new.png';
 import { useTheme } from '@/hooks/useTheme';
 import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 import { UserMenu } from '@/components/dashboard/UserMenu';
+import { formatPercent, formatDateBR } from '@/lib/utils';
+import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+
+interface RankingInfo {
+  rank_position: number;
+  total_participants: number;
+  my_score: number;
+}
 
 export default function ColaboradorDashboard() {
   const { user } = useAuth();
@@ -21,6 +33,9 @@ export default function ColaboradorDashboard() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
+  const [ranking, setRanking] = useState<RankingInfo | null>(null);
+  const [activeModal, setActiveModal] = useState<'delayed' | 'notDelivered' | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchMyData = useCallback(async () => {
     if (!user) return;
@@ -28,7 +43,6 @@ export default function ColaboradorDashboard() {
     try {
       setIsLoading(true);
 
-      // Fetch employee linked to this user
       const { data: empData, error: empError } = await supabase
         .from('employees')
         .select('*')
@@ -49,14 +63,14 @@ export default function ColaboradorDashboard() {
 
       if (goalsError) throw goalsError;
 
-      // Check if there's monthly progress for this month
+      // Fetch monthly progress for this month
       const { data: monthlyProgress } = await supabase
         .from('goal_monthly_progress')
         .select('*')
         .eq('month', selectedMonth)
         .in('goal_id', (goalsData || []).map(g => g.id));
 
-      // Check monthly bonus
+      // Monthly bonus
       const { data: monthlyBonus } = await supabase
         .from('employee_monthly_bonus')
         .select('*')
@@ -64,11 +78,26 @@ export default function ColaboradorDashboard() {
         .eq('month', selectedMonth)
         .maybeSingle();
 
+      // Ranking position
+      const { data: rankData } = await supabase.rpc('get_my_ranking_position', {
+        target_month: selectedMonth,
+      });
+
+      if (rankData && rankData.length > 0) {
+        setRanking(rankData[0] as unknown as RankingInfo);
+      } else {
+        setRanking(null);
+      }
+
       const mapGoals = (type: string): Goal[] => {
         return (goalsData || [])
           .filter(g => g.goal_type === type)
+          .filter(g => {
+            // Only show goals that have a monthly snapshot and are not deleted
+            const progress = monthlyProgress?.find(p => p.goal_id === g.id);
+            return progress && !progress.is_deleted;
+          })
           .map(g => {
-            // Check monthly progress for this goal
             const progress = monthlyProgress?.find(p => p.goal_id === g.id);
             return {
               id: g.id,
@@ -111,6 +140,186 @@ export default function ColaboradorDashboard() {
     fetchMyData();
   }, [fetchMyData]);
 
+  // Delayed and not delivered goals
+  const delayedGoals = employee
+    ? [...employee.macroGoals, ...employee.sectoralGoals]
+        .filter(goal => getGoalStatus(goal.deadline, goal.deliveryDate) === 'late')
+        .map(goal => ({ goal, employee }))
+    : [];
+
+  const notDeliveredGoals = employee
+    ? [...employee.macroGoals, ...employee.sectoralGoals]
+        .filter(goal => getGoalStatus(goal.deadline, goal.deliveryDate) === 'not_delivered')
+        .map(goal => ({ goal, employee }))
+    : [];
+
+  // Export PDF
+  const exportToPDF = async () => {
+    if (!employee) return;
+    setIsExporting(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const totalPerf = calculateTotalPerformance(employee);
+      const macroPerf = calculateGoalsPerformance(employee.macroGoals);
+      const sectoralPerf = calculateGoalsPerformance(employee.sectoralGoals);
+
+      doc.setFontSize(18);
+      doc.setTextColor(249, 115, 22);
+      doc.text('Rende + | Meu Desempenho', pageWidth / 2, 20, { align: 'center' });
+
+      doc.setFontSize(11);
+      doc.setTextColor(100);
+      doc.text(`Mês: ${selectedMonth}`, pageWidth / 2, 28, { align: 'center' });
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, pageWidth / 2, 34, { align: 'center' });
+
+      let yPos = 48;
+
+      // Employee info
+      doc.setTextColor(60);
+      doc.setFontSize(12);
+      doc.text(`Colaborador: ${employee.name}`, 15, yPos); yPos += 6;
+      doc.text(`Cargo: ${employee.role} | Setor: ${employee.sector}`, 15, yPos); yPos += 10;
+
+      // Ranking
+      if (ranking) {
+        doc.setFillColor(249, 115, 22);
+        doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text(`RANKING: ${ranking.rank_position}º de ${ranking.total_participants} | Pontuação: ${formatPercent(ranking.my_score)}%`, 15, yPos + 2);
+        yPos += 18;
+      }
+
+      // Stats
+      doc.setTextColor(60);
+      doc.setFontSize(10);
+      doc.text(`Metas em Atraso: ${delayedGoals.length}`, 15, yPos); yPos += 6;
+      doc.text(`Metas Não Entregues: ${notDeliveredGoals.length}`, 15, yPos); yPos += 10;
+
+      // Macro Goals
+      doc.setFontSize(11);
+      doc.setTextColor(249, 115, 22);
+      doc.text('Metas Macro:', 15, yPos); yPos += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      employee.macroGoals.forEach(goal => {
+        if (yPos > 280) { doc.addPage(); yPos = 20; }
+        doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${formatPercent(goal.achieved)}% | ${getStatusLabel(getGoalStatus(goal.deadline, goal.deliveryDate))}`, 15, yPos);
+        yPos += 5;
+        if (goal.observations) {
+          doc.setTextColor(120);
+          doc.text(`    Obs: ${goal.observations.substring(0, 80)}${goal.observations.length > 80 ? '...' : ''}`, 15, yPos);
+          doc.setTextColor(80);
+          yPos += 5;
+        }
+      });
+      if (employee.macroGoals.length === 0) { doc.text('  Nenhuma meta', 15, yPos); yPos += 5; }
+      doc.text(`  Subtotal Macro: ${formatPercent(macroPerf)}%`, 15, yPos); yPos += 8;
+
+      // Sectoral Goals
+      doc.setFontSize(11);
+      doc.setTextColor(249, 115, 22);
+      doc.text('Metas Setoriais:', 15, yPos); yPos += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      employee.sectoralGoals.forEach(goal => {
+        if (yPos > 280) { doc.addPage(); yPos = 20; }
+        doc.text(`  • ${goal.name}: Peso ${goal.weight}% | Realizado ${formatPercent(goal.achieved)}% | ${getStatusLabel(getGoalStatus(goal.deadline, goal.deliveryDate))}`, 15, yPos);
+        yPos += 5;
+        if (goal.observations) {
+          doc.setTextColor(120);
+          doc.text(`    Obs: ${goal.observations.substring(0, 80)}${goal.observations.length > 80 ? '...' : ''}`, 15, yPos);
+          doc.setTextColor(80);
+          yPos += 5;
+        }
+      });
+      if (employee.sectoralGoals.length === 0) { doc.text('  Nenhuma meta', 15, yPos); yPos += 5; }
+      doc.text(`  Subtotal Setorial: ${formatPercent(sectoralPerf)}%`, 15, yPos); yPos += 10;
+
+      // Summary
+      doc.setFillColor(245, 245, 245);
+      doc.rect(10, yPos - 3, pageWidth - 20, 16, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      doc.text(`Bônus: +${employee.performanceBonus}%${employee.bonusDescription ? ` (${employee.bonusDescription})` : ''}`, 15, yPos + 3);
+      doc.setFontSize(12);
+      doc.setTextColor(249, 115, 22);
+      doc.text(`TOTAL: ${formatPercent(totalPerf)}%`, pageWidth - 50, yPos + 10);
+
+      doc.save(`meu-desempenho-${selectedMonth}.pdf`);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export Excel
+  const exportToExcel = async () => {
+    if (!employee) return;
+    setIsExporting(true);
+    try {
+      const totalPerf = calculateTotalPerformance(employee);
+      const macroPerf = calculateGoalsPerformance(employee.macroGoals);
+      const sectoralPerf = calculateGoalsPerformance(employee.sectoralGoals);
+      const wb = XLSX.utils.book_new();
+
+      // Summary sheet
+      const summaryData = [
+        ['MEU DESEMPENHO', ''],
+        ['Mês', selectedMonth],
+        ['Colaborador', employee.name],
+        ['Cargo', employee.role],
+        ['Setor', employee.sector],
+        ['', ''],
+        ['Ranking', ranking ? `${ranking.rank_position}º de ${ranking.total_participants}` : 'N/A'],
+        ['Pontuação', ranking ? `${formatPercent(ranking.my_score)}%` : 'N/A'],
+        ['Metas em Atraso', delayedGoals.length],
+        ['Metas Não Entregues', notDeliveredGoals.length],
+        ['', ''],
+        ['Subtotal Macro (%)', formatPercent(macroPerf)],
+        ['Subtotal Setorial (%)', formatPercent(sectoralPerf)],
+        ['Bônus (%)', employee.performanceBonus],
+        ['TOTAL (%)', formatPercent(totalPerf)],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      wsSummary['!cols'] = [{ wch: 25 }, { wch: 30 }];
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+      // Goals sheet
+      const allGoals = [
+        ...employee.macroGoals.map(g => ({ ...g, type: 'Macro' })),
+        ...employee.sectoralGoals.map(g => ({ ...g, type: 'Setorial' })),
+      ];
+      const goalsRows = [
+        ['Tipo', 'Meta', 'Peso (%)', 'Realizado (%)', 'Prazo', 'Entrega', 'Status', 'Observações'],
+        ...allGoals.map(g => [
+          g.type,
+          g.name,
+          g.weight,
+          g.achieved,
+          g.deadline ? formatDateBR(g.deadline) : '',
+          g.deliveryDate ? formatDateBR(g.deliveryDate) : '',
+          getStatusLabel(getGoalStatus(g.deadline, g.deliveryDate)),
+          g.observations || '',
+        ]),
+      ];
+      const wsGoals = XLSX.utils.aoa_to_sheet(goalsRows);
+      wsGoals['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 40 }];
+      XLSX.utils.book_append_sheet(wb, wsGoals, 'Metas');
+
+      XLSX.writeFile(wb, `meu-desempenho-${selectedMonth}.xlsx`);
+      toast.success('Excel exportado com sucesso!');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Erro ao exportar Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -138,11 +347,7 @@ export default function ColaboradorDashboard() {
     );
   }
 
-  // No-op handlers since colaborador can't edit
-  const noOpGoal = () => {};
-  const noOpBonus = () => {};
-  const noOpEdit = () => {};
-  const noOpDelete = () => {};
+  const noOp = () => {};
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,7 +365,7 @@ export default function ColaboradorDashboard() {
               <p className="text-sm text-muted-foreground">Visualize suas metas e desempenho</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <Badge variant="secondary" className="gap-1">
               <User className="w-3 h-3" />
               Colaborador
@@ -171,22 +376,128 @@ export default function ColaboradorDashboard() {
           </div>
         </div>
 
+        {/* Ranking + Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Ranking Card */}
+          <Card className="shadow-md overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Minha Posição</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {ranking ? `${ranking.rank_position}º` : '—'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {ranking ? `de ${ranking.total_participants} colaboradores` : 'Sem dados no mês'}
+                  </p>
+                  {ranking && (
+                    <p className="text-xs text-primary mt-1 font-medium">
+                      Pontuação: {formatPercent(ranking.my_score)}%
+                    </p>
+                  )}
+                </div>
+                <div className="p-2 rounded-lg bg-accent text-accent-foreground">
+                  <Trophy className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delayed Goals Card */}
+          <Card 
+            className="shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setActiveModal('delayed')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Metas em Atraso</p>
+                  <p className="text-2xl font-bold mt-1">{delayedGoals.length}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">entregas atrasadas</p>
+                </div>
+                <div className={`p-2 rounded-lg ${delayedGoals.length > 0 ? 'bg-performance-low text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-xs text-primary mt-2 font-medium">Clique para ver detalhes →</p>
+            </CardContent>
+          </Card>
+
+          {/* Not Delivered Goals Card */}
+          <Card 
+            className="shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setActiveModal('notDelivered')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Não Entregues</p>
+                  <p className="text-2xl font-bold mt-1">{notDeliveredGoals.length}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">metas pendentes</p>
+                </div>
+                <div className={`p-2 rounded-lg ${notDeliveredGoals.length > 0 ? 'bg-performance-medium text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  <Target className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-xs text-primary mt-2 font-medium">Clique para ver detalhes →</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="flex gap-2 mb-6">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportToPDF} 
+            disabled={isExporting}
+            className="gap-1"
+          >
+            <FileText className="w-4 h-4" />
+            Exportar PDF
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportToExcel} 
+            disabled={isExporting}
+            className="gap-1"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Exportar Excel
+          </Button>
+        </div>
+
         {/* Employee Profile - Read Only */}
         <div className="space-y-6">
           <EmployeeProfile
             employee={employee}
-            onClose={() => {}}
-            onUpdateGoal={noOpGoal}
-            onUpdateBonus={noOpBonus}
-            onEditEmployee={noOpEdit}
-            onDeleteEmployee={noOpDelete}
+            onClose={noOp}
+            onUpdateGoal={noOp}
+            onUpdateBonus={noOp}
+            onEditEmployee={noOp}
+            onDeleteEmployee={noOp}
             canEdit={false}
           />
-
-          {/* Performance Charts */}
           <PerformanceCharts employees={[employee]} />
         </div>
       </div>
+
+      {/* Modals */}
+      <GoalDetailsModal
+        open={activeModal === 'delayed'}
+        onOpenChange={(open) => !open && setActiveModal(null)}
+        title="Minhas Metas em Atraso"
+        type="goals"
+        goalsWithEmployee={delayedGoals}
+      />
+      <GoalDetailsModal
+        open={activeModal === 'notDelivered'}
+        onOpenChange={(open) => !open && setActiveModal(null)}
+        title="Minhas Metas Não Entregues"
+        type="goals"
+        goalsWithEmployee={notDeliveredGoals}
+      />
     </div>
   );
 }
