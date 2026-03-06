@@ -448,6 +448,14 @@ export type Database = {
     }
     Functions: {
       get_employee_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_my_ranking_position: {
+        Args: { target_month: string }
+        Returns: {
+          my_score: number
+          rank_position: number
+          total_participants: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
