@@ -1,40 +1,41 @@
 
 
-# Plan: Goal Name Filter, Remove Rounding, Fix Ranking Calculation
+# Correção do Ranking + Casas Decimais na Média
 
-## 1. Add Goal Name Filter to EmployeeFilter
+## Diagnóstico
 
-**What**: Add a new dropdown/select in the filter bar that lists all unique goal names across employees. When a goal name is selected (e.g., "DNA JVM"), only employees who have that goal are shown, displaying their individual percentages for that specific goal.
+### 1. Ranking incorreto
+A função SQL `get_my_ranking_position` filtra apenas `WHERE e.status = 'active'`, mas o ranking do painel ADM (`RankingTable.tsx`) inclui **todos os colaboradores** (ativos e inativos) na ordenação. Isso causa divergência na posição.
 
-**How**:
-- In `Index.tsx`: Add state `selectedGoalName` and compute a list of all unique goal names from all employees' goals (macro + sectoral). Pass to `EmployeeFilter`.
-- In `EmployeeFilter.tsx`: Add a new `Select` dropdown for goal name filtering, listing all available goal names.
-- Filter logic in `Index.tsx`: When a goal name is selected, filter `employees` to only those who have a goal matching that name.
+Além disso, a função SQL não limita o bônus a 5% (`Math.min(performanceBonus, 5)`) como faz o frontend em `calculateTotalPerformance`.
 
-## 2. Remove All Rounding from Percentages
+**Correção:** Atualizar a função SQL para:
+- Remover filtro `WHERE e.status = 'active'` (incluir todos como no ranking ADM)
+- Aplicar `LEAST(bonus, 5)` no cálculo do bônus
 
-**What**: Remove `.toFixed(1)` and any rounding throughout the UI. Display exact decimal values as stored.
+### 2. Média de Desempenho — casas decimais
+Em `MainStatsCards.tsx` linha 30, `formatPercent(averagePerformance)` exibe todas as casas decimais. Precisa exibir apenas 2 casas decimais, **somente nesse campo**.
 
-**Files affected**:
-- `src/components/dashboard/EmployeeProfile.tsx` — Lines 186, 187, 209, 218, 359, 370, 381: Replace `.toFixed(1)` with direct value display (no rounding). Use a helper to show the raw number without trailing zeros where appropriate.
-- `src/components/dashboard/RankingTable.tsx` — Line with `employee.totalPerformance.toFixed(1)`: Remove rounding.
-- `src/types/employee.ts` — `calculateTotalPerformance` and `calculateGoalsPerformance`: Ensure no rounding occurs (currently they don't round, which is correct).
-- Check `MainStatsCards.tsx`, `DashboardStatsCards.tsx`, `PerformanceCharts.tsx`, `ExportTab.tsx` for any `.toFixed()` calls.
+**Correção:** Usar `.toFixed(2)` com vírgula apenas para a Média de Desempenho, sem alterar `formatPercent` global.
 
-**Approach**: Create a utility function `formatPercent(value: number): string` that displays the number with all its meaningful decimal places (no trailing zeros, no forced rounding). Use it everywhere percentages are displayed.
+## Arquivos a Modificar
 
-## 3. Fix Ranking Calculation Display
+1. **Migration SQL** — Recriar `get_my_ranking_position` removendo filtro de status e adicionando cap de bônus
+2. **`src/components/dashboard/MainStatsCards.tsx`** — Formatar Média de Desempenho com 2 casas decimais
 
-The calculation logic in `calculateTotalPerformance` already does a direct sum without rounding. The issue is purely in the **display** layer (`.toFixed(1)` calls). Fixing item #2 above automatically fixes this.
+## Detalhes Técnicos
 
-Verify: `75.54 + 19.24 = 94.78` — the `calculateTotalPerformance` function sums `macroSum + sectoralSum + bonus` and caps at 105. No rounding in the function itself. The fix is removing `.toFixed(1)` from the display.
+**SQL (migration):**
+```sql
+-- Fix: include all employees (not just active) and cap bonus at 5
+CREATE OR REPLACE FUNCTION public.get_my_ranking_position(target_month varchar)
+...
+  -- Remove: WHERE e.status = 'active'
+  -- Add: LEAST(emb.performance_bonus, 5) instead of emb.performance_bonus
+```
 
-## Files to Modify
-
-1. **`src/lib/utils.ts`** — Add `formatPercent()` utility
-2. **`src/components/dashboard/EmployeeFilter.tsx`** — Add goal name select dropdown
-3. **`src/pages/Index.tsx`** — Add `selectedGoalName` state and filtering logic, compute available goal names, pass props
-4. **`src/components/dashboard/EmployeeProfile.tsx`** — Replace all `.toFixed(1)` with `formatPercent()`
-5. **`src/components/dashboard/RankingTable.tsx`** — Replace `.toFixed(1)` with `formatPercent()`
-6. **`src/components/dashboard/MainStatsCards.tsx`**, **`DashboardStatsCards.tsx`**, **`PerformanceCharts.tsx`**, **`ExportTab.tsx`** — Audit and replace any rounding
+**MainStatsCards.tsx (linha 30):**
+```typescript
+value: `${averagePerformance.toFixed(2).replace('.', ',')}%`,
+```
 
