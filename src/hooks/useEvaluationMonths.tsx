@@ -10,6 +10,7 @@ interface EvaluationMonth {
   status: 'active' | 'closed';
   openedAt: string;
   closedAt?: string;
+  isPublished: boolean;
 }
 
 export function useEvaluationMonths() {
@@ -36,6 +37,7 @@ export function useEvaluationMonths() {
         status: m.status as 'active' | 'closed',
         openedAt: m.opened_at,
         closedAt: m.closed_at || undefined,
+        isPublished: (m as any).is_published ?? false,
       })));
     } catch (error) {
       console.error('Error fetching evaluation months:', error);
@@ -105,9 +107,52 @@ export function useEvaluationMonths() {
   // Check if a month is editable
   const isMonthEditable = useCallback((month: string): boolean => {
     const evalMonth = evaluationMonths.find(m => m.month === month);
-    // Month is editable if it exists and is active, or if it doesn't exist yet (can be initialized)
     return !evalMonth || evalMonth.status === 'active';
   }, [evaluationMonths]);
+
+  // Check if a month is published
+  const isMonthPublished = useCallback((month: string): boolean => {
+    const evalMonth = evaluationMonths.find(m => m.month === month);
+    return evalMonth?.isPublished ?? false;
+  }, [evaluationMonths]);
+
+  // Publish a month (make data visible to colaboradores)
+  const publishMonth = useCallback(async (month: string): Promise<boolean> => {
+    if (!isAdmin) return false;
+    try {
+      const { error } = await supabase
+        .from('evaluation_months')
+        .update({ is_published: true } as any)
+        .eq('month', month);
+      if (error) throw error;
+      await fetchEvaluationMonths();
+      toast.success(`Mês ${formatMonthLabel(month)} publicado para colaboradores!`);
+      return true;
+    } catch (error) {
+      console.error('Error publishing month:', error);
+      toast.error('Erro ao publicar mês');
+      return false;
+    }
+  }, [isAdmin, fetchEvaluationMonths]);
+
+  // Unpublish a month
+  const unpublishMonth = useCallback(async (month: string): Promise<boolean> => {
+    if (!isAdmin) return false;
+    try {
+      const { error } = await supabase
+        .from('evaluation_months')
+        .update({ is_published: false } as any)
+        .eq('month', month);
+      if (error) throw error;
+      await fetchEvaluationMonths();
+      toast.success(`Mês ${formatMonthLabel(month)} despublicado.`);
+      return true;
+    } catch (error) {
+      console.error('Error unpublishing month:', error);
+      toast.error('Erro ao despublicar mês');
+      return false;
+    }
+  }, [isAdmin, fetchEvaluationMonths]);
 
   // Auto-initialize current month if it doesn't exist
   useEffect(() => {
@@ -134,6 +179,9 @@ export function useEvaluationMonths() {
     initializeMonth,
     closeMonth,
     isMonthEditable,
+    isMonthPublished,
+    publishMonth,
+    unpublishMonth,
     fetchEvaluationMonths,
   };
 }

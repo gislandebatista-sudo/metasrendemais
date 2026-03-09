@@ -119,6 +119,7 @@ export type Database = {
           closed_by: string | null
           created_at: string
           id: string
+          is_published: boolean
           month: string
           opened_at: string
           status: string
@@ -128,6 +129,7 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           id?: string
+          is_published?: boolean
           month: string
           opened_at?: string
           status?: string
@@ -137,6 +139,7 @@ export type Database = {
           closed_by?: string | null
           created_at?: string
           id?: string
+          is_published?: boolean
           month?: string
           opened_at?: string
           status?: string
@@ -466,6 +469,7 @@ export type Database = {
       initialize_month: { Args: { target_month: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       is_colaborador: { Args: never; Returns: boolean }
+      is_month_published: { Args: { target_month: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "viewer" | "colaborador"
