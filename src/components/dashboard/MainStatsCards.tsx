@@ -27,7 +27,7 @@ export function MainStatsCards({ employees }: MainStatsCardsProps) {
     },
     {
       title: 'Média de Desempenho',
-      value: `${formatPercent(averagePerformance)}%`,
+      value: `${averagePerformance.toFixed(2).replace('.', ',')}%`,
       icon: TrendingUp,
       color: averagePerformance >= 100 ? 'bg-performance-high text-primary-foreground' : averagePerformance >= 80 ? 'bg-performance-medium text-primary-foreground' : 'bg-performance-low text-primary-foreground',
     },
