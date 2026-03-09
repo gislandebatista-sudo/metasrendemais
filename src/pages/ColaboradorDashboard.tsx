@@ -36,12 +36,30 @@ export default function ColaboradorDashboard() {
   const [ranking, setRanking] = useState<RankingInfo | null>(null);
   const [activeModal, setActiveModal] = useState<'delayed' | 'notDelivered' | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isPublished, setIsPublished] = useState<boolean | null>(null);
 
   const fetchMyData = useCallback(async () => {
     if (!user) return;
     
     try {
       setIsLoading(true);
+
+      // Check if month is published
+      const { data: monthData } = await supabase
+        .from('evaluation_months')
+        .select('is_published')
+        .eq('month', selectedMonth)
+        .maybeSingle();
+
+      const published = (monthData as any)?.is_published ?? false;
+      setIsPublished(published);
+
+      // If month is not published, don't load data for colaborador
+      if (!published) {
+        setEmployee(null);
+        setRanking(null);
+        return;
+      }
 
       const { data: empData, error: empError } = await supabase
         .from('employees')
@@ -332,6 +350,39 @@ export default function ColaboradorDashboard() {
   }
 
   if (!employee) {
+    // Check if it's because the month is not published
+    if (isPublished === false) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <img src={theme === 'dark' ? logoWhite : logo} alt="Rende +" className="h-10" />
+                <div>
+                  <h1 className="text-xl font-bold">Meu Painel</h1>
+                  <p className="text-sm text-muted-foreground">Visualize suas metas e desempenho</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
+                <ThemeToggle />
+                <UserMenu />
+              </div>
+            </div>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Dados não publicados</h2>
+                <p className="text-muted-foreground">
+                  Os dados deste mês ainda não foram publicados pelo administrador. Tente novamente mais tarde.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="max-w-md">

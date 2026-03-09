@@ -28,7 +28,7 @@ const Index = () => {
   
   // Use the new monthly employees hook
   const { employees, isLoading, activeMonth, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
-  const { isMonthEditable, evaluationMonths } = useEvaluationMonths();
+  const { isMonthEditable, isMonthPublished, publishMonth, unpublishMonth, evaluationMonths } = useEvaluationMonths();
   const { sectors } = useSectors();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +177,10 @@ const Index = () => {
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
           totalEmployees={activeEmployeesCount}
+          isPublished={isMonthPublished(selectedMonth)}
+          onPublish={() => publishMonth(selectedMonth)}
+          onUnpublish={() => unpublishMonth(selectedMonth)}
+          isAdmin={isAdmin}
         />
 
         {/* Role and Month Status Badges */}
