@@ -449,7 +449,7 @@ export default function ColaboradorDashboard() {
                   </p>
                   {ranking && (
                     <p className="text-xs text-primary mt-1 font-medium">
-                      Pontuação: {formatPercent(ranking.my_score)}%
+                      Pontuação: {hidePercentages ? '•••' : `${formatPercent(ranking.my_score)}%`}
                     </p>
                   )}
                 </div>
