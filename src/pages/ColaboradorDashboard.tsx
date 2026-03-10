@@ -11,8 +11,6 @@ import { GoalDetailsModal } from '@/components/dashboard/GoalDetailsModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Button } from '@/components/ui/button';
-import logoWhite from '@/assets/logo-rende-white.png';
 import logoWhite from '@/assets/logo-rende-white.png';
 import logo from '@/assets/logo-rende-new.png';
 import { useTheme } from '@/hooks/useTheme';
