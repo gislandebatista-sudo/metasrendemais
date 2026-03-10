@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Target, User, Trophy, AlertTriangle, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Target, User, Trophy, AlertTriangle, Download, FileText, FileSpreadsheet, EyeOff, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Employee, Goal, calculateTotalPerformance, calculateGoalsPerformance, getTotalGoalsWeight, getGoalStatus, getStatusLabel, getDelayedGoalsCount, getNotDeliveredGoalsCount } from '@/types/employee';
