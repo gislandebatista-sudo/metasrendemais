@@ -31,6 +31,7 @@ interface RankingInfo {
 export default function ColaboradorDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { hidePercentages, togglePercentages } = usePercentageVisibility();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
