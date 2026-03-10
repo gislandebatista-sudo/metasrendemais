@@ -18,6 +18,7 @@ import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 import { UserMenu } from '@/components/dashboard/UserMenu';
 import { formatPercent, formatDateBR } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
