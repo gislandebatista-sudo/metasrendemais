@@ -13,6 +13,7 @@ import { useMonthlyEmployees } from '@/hooks/useMonthlyEmployees';
 import { useEvaluationMonths } from '@/hooks/useEvaluationMonths';
 import { useSectors } from '@/hooks/useSectors';
 import { useAuth } from '@/hooks/useAuth';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, BarChart3, Download, List, Loader2, Shield, Eye, Lock } from 'lucide-react';
@@ -22,6 +23,7 @@ import { format } from 'date-fns';
 
 const Index = () => {
   const { isAdmin } = useAuth();
+  const { hidePercentages, togglePercentages } = usePercentageVisibility();
   
   // Month state - default to current month in YYYY-MM format
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
@@ -61,7 +63,6 @@ const Index = () => {
       const matchesSector = selectedSector === 'all' || emp.sector === selectedSector;
       const matchesStatus = selectedStatus === 'all' || emp.status === selectedStatus;
       
-      // Filter by goal status
       let matchesGoalStatus = true;
       if (selectedGoalStatus !== 'all') {
         const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
@@ -70,7 +71,6 @@ const Index = () => {
         );
       }
 
-      // Filter by goal name
       let matchesGoalName = true;
       if (selectedGoalName !== 'all') {
         const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
@@ -85,7 +85,6 @@ const Index = () => {
     const success = await saveEmployee(newEmployee);
     if (success) {
       setEditingEmployee(undefined);
-      // Update selected employee if it was edited
       if (selectedEmployee?.id === newEmployee.id) {
         setSelectedEmployee(newEmployee);
       }
@@ -181,14 +180,13 @@ const Index = () => {
           onPublish={() => publishMonth(selectedMonth)}
           onUnpublish={() => unpublishMonth(selectedMonth)}
           isAdmin={isAdmin}
+          hidePercentages={hidePercentages}
+          onTogglePercentages={togglePercentages}
         />
 
         {/* Role and Month Status Badges */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge 
-            variant={isAdmin ? 'default' : 'secondary'} 
-            className="gap-1"
-          >
+          <Badge variant={isAdmin ? 'default' : 'secondary'} className="gap-1">
             {isAdmin ? (
               <>
                 <Shield className="w-3 h-3" />
@@ -202,7 +200,6 @@ const Index = () => {
             )}
           </Badge>
           
-          {/* Month edit status */}
           {!isMonthEditable(activeMonth) && (
             <Badge variant="outline" className="gap-1 border-muted-foreground/50">
               <Lock className="w-3 h-3" />
@@ -296,7 +293,6 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          {/* List Tab - Colaboradores Ativos com busca */}
           <TabsContent value="list" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1">

@@ -1,4 +1,4 @@
-import { Users, Send, Undo2 } from 'lucide-react';
+import { Users, Send, Undo2, EyeOff, Eye } from 'lucide-react';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
@@ -14,9 +14,11 @@ interface HeaderProps {
   onPublish?: () => void;
   onUnpublish?: () => void;
   isAdmin?: boolean;
+  hidePercentages?: boolean;
+  onTogglePercentages?: () => void;
 }
 
-export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublished, onPublish, onUnpublish, isAdmin }: HeaderProps) {
+export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublished, onPublish, onUnpublish, isAdmin, hidePercentages, onTogglePercentages }: HeaderProps) {
   return (
     <header className="bg-card border border-border p-6 rounded-2xl mb-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -43,6 +45,14 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
             <Users className="w-5 h-5" />
             <span className="font-medium">{totalEmployees} colaboradores ativos</span>
           </div>
+
+          {/* Toggle Percentages */}
+          {onTogglePercentages && (
+            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={onTogglePercentages}>
+              {hidePercentages ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {hidePercentages ? 'Mostrar %' : 'Ocultar %'}
+            </Button>
+          )}
           
           {/* Publication Status + Actions (Admin only) */}
           {isAdmin && (

@@ -2,12 +2,14 @@ import { Users, TrendingUp, Award, UserCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Employee, calculateTotalPerformance } from '@/types/employee';
 import { formatPercent } from '@/lib/utils';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 
 interface MainStatsCardsProps {
   employees: Employee[];
 }
 
 export function MainStatsCards({ employees }: MainStatsCardsProps) {
+  const { hidePercentages } = usePercentageVisibility();
   const activeEmployees = employees.filter(emp => emp.status === 'active');
   const performances = activeEmployees.map(emp => calculateTotalPerformance(emp));
   
@@ -24,18 +26,21 @@ export function MainStatsCards({ employees }: MainStatsCardsProps) {
       subtitle: `de ${employees.length} total`,
       icon: UserCheck,
       color: 'bg-primary text-primary-foreground',
+      isPercentage: false,
     },
     {
       title: 'Média de Desempenho',
-      value: `${averagePerformance.toFixed(2).replace('.', ',')}%`,
+      value: hidePercentages ? '•••' : `${averagePerformance.toFixed(2).replace('.', ',')}%`,
       icon: TrendingUp,
       color: averagePerformance >= 100 ? 'bg-performance-high text-primary-foreground' : averagePerformance >= 80 ? 'bg-performance-medium text-primary-foreground' : 'bg-performance-low text-primary-foreground',
+      isPercentage: true,
     },
     {
       title: 'Melhor Resultado',
-      value: `${formatPercent(topPerformance)}%`,
+      value: hidePercentages ? '•••' : `${formatPercent(topPerformance)}%`,
       icon: Award,
       color: 'bg-performance-excellent text-primary-foreground',
+      isPercentage: true,
     },
   ];
 

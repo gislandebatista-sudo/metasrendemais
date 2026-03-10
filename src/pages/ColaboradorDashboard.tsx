@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Target, User, Trophy, AlertTriangle, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Target, User, Trophy, AlertTriangle, Download, FileText, FileSpreadsheet, EyeOff, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Employee, Goal, calculateTotalPerformance, calculateGoalsPerformance, getTotalGoalsWeight, getGoalStatus, getStatusLabel, getDelayedGoalsCount, getNotDeliveredGoalsCount } from '@/types/employee';
@@ -18,6 +18,7 @@ import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 import { UserMenu } from '@/components/dashboard/UserMenu';
 import { formatPercent, formatDateBR } from '@/lib/utils';
 import { toast } from 'sonner';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -30,6 +31,7 @@ interface RankingInfo {
 export default function ColaboradorDashboard() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { hidePercentages, togglePercentages } = usePercentageVisibility();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
@@ -421,6 +423,10 @@ export default function ColaboradorDashboard() {
               <User className="w-3 h-3" />
               Colaborador
             </Badge>
+            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={togglePercentages}>
+              {hidePercentages ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {hidePercentages ? 'Mostrar %' : 'Ocultar %'}
+            </Button>
             <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
             <ThemeToggle />
             <UserMenu />
@@ -443,7 +449,7 @@ export default function ColaboradorDashboard() {
                   </p>
                   {ranking && (
                     <p className="text-xs text-primary mt-1 font-medium">
-                      Pontuação: {formatPercent(ranking.my_score)}%
+                      Pontuação: {hidePercentages ? '•••' : `${formatPercent(ranking.my_score)}%`}
                     </p>
                   )}
                 </div>

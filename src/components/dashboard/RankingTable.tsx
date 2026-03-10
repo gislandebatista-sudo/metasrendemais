@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Employee, calculateTotalPerformance, getPerformanceLevel } from '@/types/employee';
 import { cn, formatPercent } from '@/lib/utils';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 
 interface RankingTableProps {
   employees: Employee[];
@@ -12,9 +13,9 @@ interface RankingTableProps {
 }
 
 export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: RankingTableProps) {
+  const { hidePercentages } = usePercentageVisibility();
   const isGoalFiltered = selectedGoalName && selectedGoalName !== 'all';
 
-  // Compute goal-specific percentage for each employee when filtering
   const getGoalAchieved = (emp: Employee): number => {
     if (!isGoalFiltered) return calculateTotalPerformance(emp);
     const allGoals = [...emp.macroGoals, ...emp.sectoralGoals];
@@ -40,42 +41,29 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
 
   const getRankIcon = (position: number) => {
     switch (position) {
-      case 0:
-        return <Crown className="w-5 h-5 text-rank-gold" />;
-      case 1:
-        return <Medal className="w-5 h-5 text-rank-silver" />;
-      case 2:
-        return <Medal className="w-5 h-5 text-rank-bronze" />;
-      default:
-        return <span className="w-5 h-5 flex items-center justify-center text-muted-foreground font-medium">{position + 1}</span>;
+      case 0: return <Crown className="w-5 h-5 text-rank-gold" />;
+      case 1: return <Medal className="w-5 h-5 text-rank-silver" />;
+      case 2: return <Medal className="w-5 h-5 text-rank-bronze" />;
+      default: return <span className="w-5 h-5 flex items-center justify-center text-muted-foreground font-medium">{position + 1}</span>;
     }
   };
 
   const getRankBadge = (position: number) => {
     switch (position) {
-      case 0:
-        return 'rank-gold';
-      case 1:
-        return 'rank-silver';
-      case 2:
-        return 'rank-bronze';
-      default:
-        return 'bg-muted';
+      case 0: return 'rank-gold';
+      case 1: return 'rank-silver';
+      case 2: return 'rank-bronze';
+      default: return 'bg-muted';
     }
   };
 
   const getPerformanceColor = (level: string) => {
     switch (level) {
-      case 'low':
-        return 'text-performance-low';
-      case 'medium':
-        return 'text-performance-medium';
-      case 'high':
-        return 'text-performance-high';
-      case 'excellent':
-        return 'text-performance-excellent';
-      default:
-        return 'text-muted-foreground';
+      case 'low': return 'text-performance-low';
+      case 'medium': return 'text-performance-medium';
+      case 'high': return 'text-performance-high';
+      case 'excellent': return 'text-performance-excellent';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -126,18 +114,14 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium truncate">{employee.name}</span>
-                    {isTopThree && (
-                      <Star className="w-4 h-4 text-accent fill-accent" />
-                    )}
-                    {isAbove100 && (
+                    {isTopThree && <Star className="w-4 h-4 text-accent fill-accent" />}
+                    {!hidePercentages && isAbove100 && (
                       <Badge variant="outline" className="text-xs bg-performance-excellent/10 text-performance-excellent border-performance-excellent/30">
                         +100%
                       </Badge>
                     )}
                     {isInactive && (
-                      <Badge variant="secondary" className="text-xs">
-                        Inativo
-                      </Badge>
+                      <Badge variant="secondary" className="text-xs">Inativo</Badge>
                     )}
                   </div>
                   <span className="text-sm text-muted-foreground">{employee.role}</span>
@@ -145,12 +129,12 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
 
                 <div className="text-right">
                   <div className={cn("font-bold text-lg", getPerformanceColor(level))}>
-                    {formatPercent(displayValue)}%
+                    {hidePercentages ? '•••' : `${formatPercent(displayValue)}%`}
                   </div>
-                  {isGoalFiltered && employee.goalWeight !== null && (
+                  {!hidePercentages && isGoalFiltered && employee.goalWeight !== null && (
                     <span className="text-xs text-muted-foreground">Peso: {employee.goalWeight}%</span>
                   )}
-                  {!isGoalFiltered && employee.performanceBonus > 0 && (
+                  {!hidePercentages && !isGoalFiltered && employee.performanceBonus > 0 && (
                     <span className="text-xs text-accent">+{employee.performanceBonus}% bônus</span>
                   )}
                 </div>
