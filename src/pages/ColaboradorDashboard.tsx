@@ -423,6 +423,10 @@ export default function ColaboradorDashboard() {
               <User className="w-3 h-3" />
               Colaborador
             </Badge>
+            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={togglePercentages}>
+              {hidePercentages ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              {hidePercentages ? 'Mostrar %' : 'Ocultar %'}
+            </Button>
             <MonthSelector selectedMonth={selectedMonth} onMonthChange={setSelectedMonth} />
             <ThemeToggle />
             <UserMenu />
