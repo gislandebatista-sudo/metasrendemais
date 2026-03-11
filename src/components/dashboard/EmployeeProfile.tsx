@@ -185,7 +185,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Realizado (máx: {goal.weight}%)</span>
-                      <span className="font-medium">{formatPercent(goal.achieved)}%</span>
+                      <span className="font-medium">{hidePercentages ? '•••' : `${formatPercent(goal.achieved)}%`}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div 
