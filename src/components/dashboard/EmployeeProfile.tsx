@@ -380,7 +380,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <Briefcase className="w-5 h-5" />
                 <span className="font-medium">Metas Setoriais</span>
               </div>
-              <span className="text-2xl font-bold">{formatPercent(sectoralPerformance)}%</span>
+              <span className="text-2xl font-bold">{hidePercentages ? '•••' : `${formatPercent(sectoralPerformance)}%`}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">{employee.sectoralGoals.length} metas ({sectoralWeight}% peso)</p>
           </div>
