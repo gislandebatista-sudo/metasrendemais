@@ -358,7 +358,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <TrendingUp className="w-5 h-5" />
                 <span className="font-medium">Total Ranking</span>
               </div>
-              <span className="text-2xl font-bold">{formatPercent(totalPerformance)}%</span>
+              <span className="text-2xl font-bold">{hidePercentages ? '•••' : `${formatPercent(totalPerformance)}%`}</span>
             </div>
             <p className="text-sm opacity-80 mt-1">{getPerformanceLevelLabel(level)} (Metas + Bônus)</p>
           </div>
