@@ -39,6 +39,7 @@ interface EmployeeProfileProps {
 }
 
 export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus, onEditEmployee, onDeleteEmployee, canEdit = true }: EmployeeProfileProps) {
+  const { hidePercentages } = usePercentageVisibility();
   const [editingBonus, setEditingBonus] = useState(false);
   const [bonusValue, setBonusValue] = useState(employee.performanceBonus);
   const [bonusDescription, setBonusDescription] = useState(employee.bonusDescription || '');

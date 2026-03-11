@@ -21,7 +21,6 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "list_unlinked_employees": {
-        // Return employees that don't have a user_id linked yet (available for registration)
         const { data, error } = await supabaseAdmin
           .from("employees")
           .select("id, name, sector, role")
@@ -51,7 +50,6 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Verify employee exists and has no user_id
         const { data: emp, error: empError } = await supabaseAdmin
           .from("employees")
           .select("id, name, user_id")
@@ -72,7 +70,6 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Create auth user
         const { data: newUser, error: createError } =
           await supabaseAdmin.auth.admin.createUser({
             email,
@@ -96,11 +93,8 @@ Deno.serve(async (req) => {
 
         const userId = newUser.user.id;
 
-        // Delete the default 'viewer' role and assign 'colaborador'
         await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
         await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "colaborador" });
-
-        // Link user_id to employee record
         await supabaseAdmin.from("employees").update({ user_id: userId }).eq("id", employee_id);
 
         return new Response(
@@ -110,7 +104,6 @@ Deno.serve(async (req) => {
       }
 
       case "link_google_user": {
-        // Called after Google OAuth login to link an existing auth user to an employee
         const authHeader = req.headers.get("Authorization");
         if (!authHeader?.startsWith("Bearer ")) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -139,7 +132,6 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Verify employee exists and has no user_id
         const { data: emp } = await supabaseAdmin
           .from("employees")
           .select("id, user_id")
@@ -160,7 +152,6 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Check if user is already linked to another employee
         const { data: existingLink } = await supabaseAdmin
           .from("employees")
           .select("id")
@@ -174,12 +165,68 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Delete the default 'viewer' role and assign 'colaborador'
         await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
         await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "colaborador" });
-
-        // Link
         await supabaseAdmin.from("employees").update({ user_id: user.id }).eq("id", employee_id);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "delete_employee_auth": {
+        // Admin-only: delete auth user linked to an employee before deleting the employee record
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader?.startsWith("Bearer ")) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Verify caller is admin
+        const supabaseCaller = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: isAdminData } = await supabaseCaller.rpc("is_admin");
+        if (!isAdminData) {
+          return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação." }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { employee_id } = params;
+        if (!employee_id) {
+          return new Response(
+            JSON.stringify({ error: "employee_id é obrigatório" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Get the user_id linked to this employee
+        const { data: emp } = await supabaseAdmin
+          .from("employees")
+          .select("id, user_id")
+          .eq("id", employee_id)
+          .single();
+
+        if (!emp) {
+          return new Response(
+            JSON.stringify({ success: true, message: "Employee not found, nothing to clean" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (emp.user_id) {
+          // Delete user roles
+          await supabaseAdmin.from("user_roles").delete().eq("user_id", emp.user_id);
+          // Delete profile
+          await supabaseAdmin.from("profiles").delete().eq("user_id", emp.user_id);
+          // Delete auth user
+          await supabaseAdmin.auth.admin.deleteUser(emp.user_id);
+        }
 
         return new Response(
           JSON.stringify({ success: true }),
