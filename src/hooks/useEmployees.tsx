@@ -208,6 +208,14 @@ export function useEmployees() {
     }
 
     try {
+      // First, clean up auth user linked to this employee
+      const { data: session } = await supabase.auth.getSession();
+      if (session?.session?.access_token) {
+        await supabase.functions.invoke('self-register', {
+          body: { action: 'delete_employee_auth', employee_id: employeeId },
+        });
+      }
+
       const { error } = await supabase
         .from('employees')
         .delete()
