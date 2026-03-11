@@ -209,7 +209,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                     </div>
                   ) : (
                     <div className="w-24 text-right">
-                      <span className="font-medium">{formatPercent(goal.achieved)}%</span>
+                      <span className="font-medium">{hidePercentages ? '•••' : `${formatPercent(goal.achieved)}%`}</span>
                     </div>
                   )}
                 </div>
