@@ -37,7 +37,7 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
       goalAchieved: getGoalAchieved(emp),
       goalWeight: getGoalWeight(emp),
     }))
-    .sort((a, b) => b.goalAchieved - a.goalAchieved);
+    .sort((a, b) => b.goalAchieved - a.goalAchieved || a.name.localeCompare(b.name));
 
   const getRankIcon = (position: number) => {
     switch (position) {
