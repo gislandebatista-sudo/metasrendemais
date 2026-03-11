@@ -217,7 +217,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 {/* Contribution and Observations */}
                 <div className="flex items-center justify-between text-sm border-t pt-2 mt-2">
                   <span className="text-muted-foreground">Contribuição para o Ranking</span>
-                  <span className="font-semibold text-primary">{formatPercent(goal.achieved)}%</span>
+                  <span className="font-semibold text-primary">{hidePercentages ? '•••' : `${formatPercent(goal.achieved)}%`}</span>
                 </div>
 
                 {/* Observations Button */}
