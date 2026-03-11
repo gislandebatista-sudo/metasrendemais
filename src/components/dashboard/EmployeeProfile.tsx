@@ -26,6 +26,7 @@ import {
 import { cn, formatDateBR, formatPercent } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
 import { ModificationHistory } from './ModificationHistory';
+import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 
 interface EmployeeProfileProps {
   employee: Employee;
