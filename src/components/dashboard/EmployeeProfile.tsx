@@ -436,7 +436,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
           ) : (
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-accent">+{employee.performanceBonus}%</span>
+                <span className="text-2xl font-bold text-accent">{hidePercentages ? '•••' : `+${employee.performanceBonus}%`}</span>
                 <div className="flex-1">
                   <Progress value={employee.performanceBonus * 20} className="h-3 [&>div]:bg-accent" />
                 </div>
