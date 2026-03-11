@@ -369,7 +369,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <Target className="w-5 h-5" />
                 <span className="font-medium">Metas Macro</span>
               </div>
-              <span className="text-2xl font-bold text-primary">{formatPercent(macroPerformance)}%</span>
+              <span className="text-2xl font-bold text-primary">{hidePercentages ? '•••' : `${formatPercent(macroPerformance)}%`}</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">{employee.macroGoals.length} metas ({macroWeight}% peso)</p>
           </div>
