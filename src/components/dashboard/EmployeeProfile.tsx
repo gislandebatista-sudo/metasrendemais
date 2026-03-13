@@ -503,6 +503,19 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             onSave={handleSaveObservations}
           />
         )}
+
+        {/* Criteria Modal */}
+        {criteriaModal.goal && (
+          <GoalCriteriaModal
+            open={criteriaModal.open}
+            onOpenChange={(open) => setCriteriaModal({ ...criteriaModal, open })}
+            goalName={criteriaModal.goal.name}
+            goalAchieved={criteriaModal.goal.achieved}
+            goalWeight={criteriaModal.goal.weight}
+            monthlyProgressId={criteriaModal.goal.monthlyProgressId}
+            readOnly={!canEdit}
+          />
+        )}
       </CardContent>
     </Card>
   );
