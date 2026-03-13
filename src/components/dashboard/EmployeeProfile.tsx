@@ -25,6 +25,7 @@ import {
 } from '@/types/employee';
 import { cn, formatDateBR, formatPercent } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
+import { GoalCriteriaModal } from './GoalCriteriaModal';
 import { ModificationHistory } from './ModificationHistory';
 import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 
