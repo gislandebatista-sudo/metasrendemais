@@ -1,40 +1,93 @@
 
 
-# Plan: Goal Name Filter, Remove Rounding, Fix Ranking Calculation
+# Composição de Notas por Meta — Plano de Implementação
 
-## 1. Add Goal Name Filter to EmployeeFilter
+## Resumo
 
-**What**: Add a new dropdown/select in the filter bar that lists all unique goal names across employees. When a goal name is selected (e.g., "DNA JVM"), only employees who have that goal are shown, displaying their individual percentages for that specific goal.
+Criar um sistema que permite ao administrador cadastrar os critérios/notas que compõem a porcentagem final de cada meta. Ao clicar em uma meta, será exibido o detalhamento de como aquela porcentagem foi formada.
 
-**How**:
-- In `Index.tsx`: Add state `selectedGoalName` and compute a list of all unique goal names from all employees' goals (macro + sectoral). Pass to `EmployeeFilter`.
-- In `EmployeeFilter.tsx`: Add a new `Select` dropdown for goal name filtering, listing all available goal names.
-- Filter logic in `Index.tsx`: When a goal name is selected, filter `employees` to only those who have a goal matching that name.
+## 1. Nova Tabela no Banco de Dados
 
-## 2. Remove All Rounding from Percentages
+Criar tabela `goal_score_criteria` para armazenar os critérios de composição vinculados ao progresso mensal de cada meta:
 
-**What**: Remove `.toFixed(1)` and any rounding throughout the UI. Display exact decimal values as stored.
+```text
+goal_score_criteria
+├── id (uuid, PK)
+├── goal_monthly_progress_id (uuid, FK → goal_monthly_progress.id)
+├── name (text)           -- Ex: "Nota Avaliação", "Indicador X"
+├── value (numeric)        -- Nota/valor atribuído
+├── max_value (numeric)    -- Valor máximo possível (opcional)
+├── sort_order (integer)   -- Ordem de exibição
+├── created_at (timestamptz)
+├── updated_at (timestamptz)
+```
 
-**Files affected**:
-- `src/components/dashboard/EmployeeProfile.tsx` — Lines 186, 187, 209, 218, 359, 370, 381: Replace `.toFixed(1)` with direct value display (no rounding). Use a helper to show the raw number without trailing zeros where appropriate.
-- `src/components/dashboard/RankingTable.tsx` — Line with `employee.totalPerformance.toFixed(1)`: Remove rounding.
-- `src/types/employee.ts` — `calculateTotalPerformance` and `calculateGoalsPerformance`: Ensure no rounding occurs (currently they don't round, which is correct).
-- Check `MainStatsCards.tsx`, `DashboardStatsCards.tsx`, `PerformanceCharts.tsx`, `ExportTab.tsx` for any `.toFixed()` calls.
+RLS: Admins CRUD total. Colaboradores podem visualizar (SELECT) apenas critérios de suas próprias metas em meses publicados.
 
-**Approach**: Create a utility function `formatPercent(value: number): string` that displays the number with all its meaningful decimal places (no trailing zeros, no forced rounding). Use it everywhere percentages are displayed.
+## 2. Fluxo de Dados
 
-## 3. Fix Ranking Calculation Display
+```text
+Admin edita meta no EmployeeProfile
+  → Clica no botão "Composição" na meta
+  → Abre modal GoalCriteriaModal
+  → Adiciona/edita critérios (nome + valor + valor máximo)
+  → Salva → Persiste em goal_score_criteria via goal_monthly_progress_id
 
-The calculation logic in `calculateTotalPerformance` already does a direct sum without rounding. The issue is purely in the **display** layer (`.toFixed(1)` calls). Fixing item #2 above automatically fixes this.
+Colaborador visualiza meta no ColaboradorDashboard
+  → Clica na meta
+  → Abre mesmo modal em modo leitura
+  → Vê a lista de critérios que compõem a porcentagem
+```
 
-Verify: `75.54 + 19.24 = 94.78` — the `calculateTotalPerformance` function sums `macroSum + sectoralSum + bonus` and caps at 105. No rounding in the function itself. The fix is removing `.toFixed(1)` from the display.
+## 3. Componentes a Criar/Modificar
 
-## Files to Modify
+**Novo componente:** `src/components/dashboard/GoalCriteriaModal.tsx`
+- Modal com Dialog que exibe/edita os critérios de composição de uma meta
+- Modo edição (admin): campos para nome, valor, valor máximo, botão adicionar/remover
+- Modo leitura (colaborador): tabela simples mostrando nome e valor de cada critério
+- Exibe o total calculado dos critérios
 
-1. **`src/lib/utils.ts`** — Add `formatPercent()` utility
-2. **`src/components/dashboard/EmployeeFilter.tsx`** — Add goal name select dropdown
-3. **`src/pages/Index.tsx`** — Add `selectedGoalName` state and filtering logic, compute available goal names, pass props
-4. **`src/components/dashboard/EmployeeProfile.tsx`** — Replace all `.toFixed(1)` with `formatPercent()`
-5. **`src/components/dashboard/RankingTable.tsx`** — Replace `.toFixed(1)` with `formatPercent()`
-6. **`src/components/dashboard/MainStatsCards.tsx`**, **`DashboardStatsCards.tsx`**, **`PerformanceCharts.tsx`**, **`ExportTab.tsx`** — Audit and replace any rounding
+**Modificar:** `src/components/dashboard/EmployeeProfile.tsx`
+- Adicionar botão "Composição" ao lado do botão "Observações" em cada meta
+- Ao clicar, abre o GoalCriteriaModal passando o goal_monthly_progress_id
+
+**Modificar:** `src/pages/ColaboradorDashboard.tsx`
+- Nas metas listadas, tornar cada meta clicável
+- Ao clicar, abre o GoalCriteriaModal em modo leitura
+- Buscar os critérios junto com os dados da meta
+
+**Modificar:** `src/hooks/useMonthlyEmployees.tsx`
+- Incluir busca dos critérios (goal_score_criteria) ao carregar progresso mensal
+- Expor dados de critérios no tipo Goal ou via lookup separado
+
+**Modificar:** `src/types/employee.ts`
+- Adicionar interface `GoalCriteria` com campos: id, name, value, maxValue, sortOrder
+- Adicionar campo opcional `criteria?: GoalCriteria[]` na interface `Goal`
+
+## 4. Exemplo Visual
+
+Ao clicar em "META DNA = 4%":
+
+```text
+┌─────────────────────────────────────┐
+│  Composição - META DNA (4%)         │
+│─────────────────────────────────────│
+│  Critério              Nota   Máx   │
+│  ─────────────────────────────────  │
+│  Avaliação Liderança   1,5    2,0   │
+│  Indicador Qualidade   1,0    1,5   │
+│  Presença Reuniões     1,5    1,5   │
+│  ─────────────────────────────────  │
+│  Total                 4,0    5,0   │
+└─────────────────────────────────────┘
+```
+
+## 5. Ordem de Execução
+
+1. Migration SQL — criar tabela + RLS policies
+2. Atualizar `src/types/employee.ts` com interface GoalCriteria
+3. Criar `GoalCriteriaModal.tsx`
+4. Modificar `EmployeeProfile.tsx` — botão "Composição" no admin
+5. Modificar `ColaboradorDashboard.tsx` — meta clicável com modal leitura
+6. Atualizar hooks para buscar/salvar critérios
 
