@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save, MessageSquare } from 'lucide-react';
+import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save, MessageSquare, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,6 +25,7 @@ import {
 } from '@/types/employee';
 import { cn, formatDateBR, formatPercent } from '@/lib/utils';
 import { GoalObservationsModal } from './GoalObservationsModal';
+import { GoalCriteriaModal } from './GoalCriteriaModal';
 import { ModificationHistory } from './ModificationHistory';
 import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 
@@ -48,6 +49,10 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     goal: Goal | null;
     goalType: 'macro' | 'sectoral';
   }>({ open: false, goal: null, goalType: 'macro' });
+  const [criteriaModal, setCriteriaModal] = useState<{
+    open: boolean;
+    goal: Goal | null;
+  }>({ open: false, goal: null });
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
@@ -220,17 +225,28 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   <span className="font-semibold text-primary">{hidePercentages ? '•••' : `${formatPercent(goal.achieved)}%`}</span>
                 </div>
 
-                {/* Observations Button */}
+                {/* Observations & Criteria Buttons */}
                 <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenObservations(goal, type)}
-                    className="gap-2"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    {goal.observations ? 'Ver/Editar Observações' : 'Adicionar Observações'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenObservations(goal, type)}
+                      className="gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {goal.observations ? 'Ver/Editar Observações' : 'Adicionar Observações'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCriteriaModal({ open: true, goal })}
+                      className="gap-2"
+                    >
+                      <ListChecks className="w-4 h-4" />
+                      Composição
+                    </Button>
+                  </div>
                   {goal.observations && (
                     <Badge variant="secondary" className="text-xs">
                       Tem observações
@@ -485,6 +501,19 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
             goal={observationsModal.goal}
             goalType={observationsModal.goalType}
             onSave={handleSaveObservations}
+          />
+        )}
+
+        {/* Criteria Modal */}
+        {criteriaModal.goal && (
+          <GoalCriteriaModal
+            open={criteriaModal.open}
+            onOpenChange={(open) => setCriteriaModal({ ...criteriaModal, open })}
+            goalName={criteriaModal.goal.name}
+            goalAchieved={criteriaModal.goal.achieved}
+            goalWeight={criteriaModal.goal.weight}
+            monthlyProgressId={criteriaModal.goal.monthlyProgressId}
+            readOnly={!canEdit}
           />
         )}
       </CardContent>

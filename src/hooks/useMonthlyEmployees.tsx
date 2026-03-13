@@ -98,7 +98,6 @@ export function useMonthlyEmployees(selectedMonth: string) {
           const base = goalBaseInfo.get(p.goal_id);
           return {
             id: p.goal_id,
-            // Use snapshot data if available, otherwise fall back to base goal
             name: p.goal_name || base?.name || 'Meta',
             description: p.goal_description || base?.description || undefined,
             weight: p.goal_weight != null ? Number(p.goal_weight) : (base?.weight ? Number(base.weight) : 0),
@@ -106,6 +105,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
             deadline: p.goal_deadline || base?.deadline || '',
             deliveryDate: p.delivery_date || undefined,
             observations: p.observations || undefined,
+            monthlyProgressId: p.id,
           };
         };
 

@@ -128,6 +128,7 @@ export default function ColaboradorDashboard() {
               deadline: progress?.goal_deadline || g.deadline,
               deliveryDate: progress?.delivery_date || g.delivery_date || undefined,
               observations: progress?.observations || g.observations || undefined,
+              monthlyProgressId: progress?.id || undefined,
             };
           });
       };

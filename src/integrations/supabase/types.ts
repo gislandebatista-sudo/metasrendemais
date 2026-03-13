@@ -287,6 +287,47 @@ export type Database = {
           },
         ]
       }
+      goal_score_criteria: {
+        Row: {
+          created_at: string
+          goal_monthly_progress_id: string
+          id: string
+          max_value: number | null
+          name: string
+          sort_order: number
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          goal_monthly_progress_id: string
+          id?: string
+          max_value?: number | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          goal_monthly_progress_id?: string
+          id?: string
+          max_value?: number | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_score_criteria_goal_monthly_progress_id_fkey"
+            columns: ["goal_monthly_progress_id"]
+            isOneToOne: false
+            referencedRelation: "goal_monthly_progress"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           achieved: number

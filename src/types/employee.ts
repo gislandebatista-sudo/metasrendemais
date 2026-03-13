@@ -1,5 +1,13 @@
 export type GoalStatus = 'early' | 'on_time' | 'late' | 'not_delivered';
 
+export interface GoalCriteria {
+  id: string;
+  name: string;
+  value: number;
+  maxValue?: number;
+  sortOrder: number;
+}
+
 export interface Goal {
   id: string;
   name: string;
@@ -9,6 +17,8 @@ export interface Goal {
   deadline: string; // ISO date string
   deliveryDate?: string; // ISO date string
   observations?: string; // Observações / Justificativas
+  criteria?: GoalCriteria[];
+  monthlyProgressId?: string; // ID from goal_monthly_progress for criteria linking
 }
 
 export interface Employee {
