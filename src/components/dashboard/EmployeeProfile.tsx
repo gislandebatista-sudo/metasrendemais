@@ -49,6 +49,10 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     goal: Goal | null;
     goalType: 'macro' | 'sectoral';
   }>({ open: false, goal: null, goalType: 'macro' });
+  const [criteriaModal, setCriteriaModal] = useState<{
+    open: boolean;
+    goal: Goal | null;
+  }>({ open: false, goal: null });
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
