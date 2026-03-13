@@ -225,17 +225,28 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                   <span className="font-semibold text-primary">{hidePercentages ? '•••' : `${formatPercent(goal.achieved)}%`}</span>
                 </div>
 
-                {/* Observations Button */}
+                {/* Observations & Criteria Buttons */}
                 <div className="flex items-center justify-between pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenObservations(goal, type)}
-                    className="gap-2"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    {goal.observations ? 'Ver/Editar Observações' : 'Adicionar Observações'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenObservations(goal, type)}
+                      className="gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {goal.observations ? 'Ver/Editar Observações' : 'Adicionar Observações'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCriteriaModal({ open: true, goal })}
+                      className="gap-2"
+                    >
+                      <ListChecks className="w-4 h-4" />
+                      Composição
+                    </Button>
+                  </div>
                   {goal.observations && (
                     <Badge variant="secondary" className="text-xs">
                       Tem observações
