@@ -9,6 +9,7 @@ import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
+import { MacroGoalsManager } from '@/components/dashboard/MacroGoalsManager';
 import { useMonthlyEmployees } from '@/hooks/useMonthlyEmployees';
 import { useEvaluationMonths } from '@/hooks/useEvaluationMonths';
 import { useSectors } from '@/hooks/useSectors';
@@ -29,7 +30,7 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   
   // Use the new monthly employees hook
-  const { employees, isLoading, activeMonth, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
+  const { employees, isLoading, activeMonth, fetchEmployees, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
   const { isMonthEditable, isMonthPublished, publishMonth, unpublishMonth, evaluationMonths } = useEvaluationMonths();
   const { sectors } = useSectors();
   
@@ -236,6 +237,13 @@ const Index = () => {
 
           <TabsContent value="employees" className="space-y-6">
             <MainStatsCards employees={employees} />
+
+            <MacroGoalsManager
+              employees={employees}
+              selectedMonth={activeMonth}
+              canEdit={canEdit}
+              onRefresh={fetchEmployees}
+            />
 
             <EmployeeFilter
               searchTerm={searchTerm}
