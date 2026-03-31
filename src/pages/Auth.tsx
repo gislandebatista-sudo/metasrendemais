@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,7 +60,6 @@ export default function Auth() {
   // Check if Google-auth user needs linking
   useEffect(() => {
     if (user && userRole === 'viewer') {
-      // New Google user — check if they have an employee link
       const checkLink = async () => {
         const { data } = await supabase
           .from('employees')
@@ -93,7 +91,6 @@ export default function Auth() {
     }
   };
 
-  // Fetch unlinked employees when signup tab is activated
   const handleTabChange = (value: string) => {
     if (value === 'signup' && unlinkedEmployees.length === 0) {
       fetchUnlinkedEmployees();
@@ -171,7 +168,6 @@ export default function Auth() {
         return;
       }
 
-      // Auto-login after registration
       const { error: loginError } = await signIn(registerEmail, registerPassword);
       if (loginError) {
         toast.success('Conta criada! Faça login com suas credenciais.');
@@ -189,10 +185,13 @@ export default function Auth() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin + '/auth',
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/auth',
+        },
       });
-      if (result?.error) {
+      if (error) {
         setError('Erro ao conectar com Google');
       }
     } catch (err: any) {
@@ -230,7 +229,6 @@ export default function Auth() {
 
       toast.success('Vinculação realizada com sucesso!');
       setNeedsLinking(false);
-      // Force refresh auth state
       window.location.href = '/colaborador';
     } catch (err: any) {
       setError(err.message || 'Erro ao vincular conta');
@@ -246,7 +244,6 @@ export default function Auth() {
     );
   }
 
-  // Google user needs linking
   if (needsLinking && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/50 p-4">
@@ -316,7 +313,6 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo / Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <Target className="w-8 h-8 text-primary" />
@@ -352,7 +348,6 @@ export default function Auth() {
                 </div>
               )}
 
-              {/* Login Tab */}
               <TabsContent value="login" className="mt-0 space-y-4">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -412,7 +407,6 @@ export default function Auth() {
                 </Button>
               </TabsContent>
 
-              {/* Signup Tab */}
               <TabsContent value="signup" className="mt-0">
                 <form onSubmit={handleSelfRegister} className="space-y-4">
                   <div className="space-y-2">
