@@ -1,41 +1,76 @@
-# Rende + — Performance Management System
+# Rende+ — Sistema de Gestão de Performance
 
 ## Overview
-A React/TypeScript single-page application for employee performance management and goal tracking. Built with Vite, shadcn/ui, and Supabase as the backend.
+
+A performance management system ("Rende+") built with React + Vite + TypeScript. It uses Supabase for authentication, database (PostgreSQL with RLS), file storage, and Edge Functions. The frontend is a pure SPA (Single Page Application).
 
 ## Architecture
-- **Frontend**: Vite + React 18 + TypeScript
-- **UI**: shadcn/ui (Radix UI) + Tailwind CSS
-- **State**: TanStack Query (React Query)
-- **Routing**: React Router DOM v6
-- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
-- **Auth**: Supabase Auth (email/password + Google OAuth)
+
+- **Frontend**: React 18, Vite 5, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (hosted) — PostgreSQL database, auth, Row Level Security, Edge Functions, Storage
+- **State/Data**: TanStack React Query, custom hooks
 
 ## Key Features
-- Admin dashboard with employee ranking, goal tracking, monthly cycles
-- Colaborador (employee) dashboard with personal goal visibility
+
 - Role-based access: `admin`, `viewer`, `colaborador`
-- Monthly evaluation cycles with publish/close controls
-- Goal attachments (stored in Supabase Storage)
-- Excel/PDF export
+- Monthly evaluation cycles with goal tracking
+- Performance bonus management
+- Employee self-registration (via Supabase Edge Function `self-register`)
+- Admin employee auth management (via Supabase Edge Function `manage-employee-auth`)
+- File attachments for goals (Supabase Storage bucket: `goal-attachments`)
+- Ranking system for colaboradores (published months only)
+- PDF export functionality
+
+## Project Structure
+
+```
+src/
+  pages/         — Top-level route components (Auth, Index, ColaboradorDashboard, NotFound)
+  components/    — Reusable UI components (dashboard/, ui/)
+  hooks/         — Custom React hooks (useAuth, useEmployees, useEvaluationMonths, useMonthlyEmployees, etc.)
+  integrations/
+    supabase/    — Supabase client and generated TypeScript types
+    lovable/     — Placeholder (Google OAuth handled via Supabase directly)
+  types/         — Shared TypeScript types
+  lib/           — Utility functions
+supabase/
+  config.toml          — Supabase project config (project_id: bmfawalempiweyepginl)
+  migrations/          — All database migrations in order
+  functions/
+    manage-employee-auth/ — Admin-only: create/reset/toggle/delete employee auth users
+    self-register/        — Public + authenticated: employee self-registration & Google linking
+```
 
 ## Environment Variables
-Stored as Replit shared env vars:
-- `VITE_SUPABASE_URL` — Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase anon key
-- `VITE_SUPABASE_PROJECT_ID` — Supabase project ID
+
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key (safe to expose in client) |
+| `VITE_SUPABASE_PROJECT_ID` | Supabase project ID |
+
+These are set in `.env` and also in `.replit` `[userenv.shared]`.
 
 ## Running the App
-```
-npm run dev
-```
-Runs on port 5000.
 
-## Supabase Backend
-The database, auth, and Edge Functions are hosted on Supabase project `bmfawalempiweyepginl`. All RLS policies and schema migrations are in `supabase/migrations/`. Edge Functions are in `supabase/functions/`.
+```bash
+npm install
+npm run dev   # starts Vite dev server on port 5000
+```
 
-## Migration Notes (Lovable → Replit)
-- Removed `lovable-tagger` from vite config (dev-only Lovable plugin)
-- Replaced `@lovable.dev/cloud-auth-js` Google OAuth with direct `supabase.auth.signInWithOAuth()`
-- Updated Vite server config: `host: "0.0.0.0"`, `port: 5000`, `allowedHosts: true`
-- Env vars moved to Replit shared environment
+## Database Roles
+
+- `admin` — Full CRUD on all data, can manage employees and goals
+- `viewer` — Read-only access to most data
+- `colaborador` — Can only see their own employee record, goals, and published month data
+
+## Supabase Edge Functions
+
+Deployed to the hosted Supabase project. Called from the frontend via `supabase.functions.invoke(...)`.
+
+## User Flow
+
+1. Users visit `/auth` and sign in with email/password or Google
+2. Admins land on `/` (admin dashboard with full management capabilities)
+3. Colaboradores land on `/colaborador` (personal dashboard showing their own goals and ranking)
+4. Viewers land on `/` (read-only dashboard)
