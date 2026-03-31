@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save, MessageSquare, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +55,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   }>({ open: false, goal: null });
   const [editingGoalName, setEditingGoalName] = useState<string | null>(null);
   const [goalNameDraft, setGoalNameDraft] = useState('');
+  const goalNameCancellingRef = useRef(false);
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
@@ -127,11 +128,13 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   };
 
   const handleStartEditGoalName = (goalId: string, currentName: string) => {
+    goalNameCancellingRef.current = false;
     setEditingGoalName(goalId);
     setGoalNameDraft(currentName);
   };
 
   const handleSaveGoalName = (goalType: 'macro' | 'sectoral', goalId: string) => {
+    if (goalNameCancellingRef.current) return;
     const trimmed = goalNameDraft.trim();
     if (trimmed) {
       onUpdateGoal(employee.id, goalType, goalId, { name: trimmed });
@@ -141,6 +144,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   };
 
   const handleCancelEditGoalName = () => {
+    goalNameCancellingRef.current = true;
     setEditingGoalName(null);
     setGoalNameDraft('');
   };
@@ -186,7 +190,18 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                         />
                       ) : (
                         <div className="flex items-center gap-1 group">
-                          <h5 className="font-medium">{goal.name}</h5>
+                          {canEdit ? (
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditGoalName(goal.id, goal.name)}
+                              className="font-medium text-left hover:text-primary transition-colors"
+                              data-testid={`text-goal-name-${goal.id}`}
+                            >
+                              {goal.name}
+                            </button>
+                          ) : (
+                            <h5 className="font-medium">{goal.name}</h5>
+                          )}
                           {canEdit && (
                             <button
                               type="button"
