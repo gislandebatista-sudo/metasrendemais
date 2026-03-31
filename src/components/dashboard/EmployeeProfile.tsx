@@ -53,6 +53,8 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     open: boolean;
     goal: Goal | null;
   }>({ open: false, goal: null });
+  const [editingGoalName, setEditingGoalName] = useState<string | null>(null);
+  const [goalNameDraft, setGoalNameDraft] = useState('');
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
@@ -124,6 +126,25 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     }
   };
 
+  const handleStartEditGoalName = (goalId: string, currentName: string) => {
+    setEditingGoalName(goalId);
+    setGoalNameDraft(currentName);
+  };
+
+  const handleSaveGoalName = (goalType: 'macro' | 'sectoral', goalId: string) => {
+    const trimmed = goalNameDraft.trim();
+    if (trimmed) {
+      onUpdateGoal(employee.id, goalType, goalId, { name: trimmed });
+    }
+    setEditingGoalName(null);
+    setGoalNameDraft('');
+  };
+
+  const handleCancelEditGoalName = () => {
+    setEditingGoalName(null);
+    setGoalNameDraft('');
+  };
+
   const renderGoalsList = (goals: Goal[], type: 'macro' | 'sectoral') => {
     const categoryWeight = getTotalGoalsWeight(goals);
     
@@ -150,8 +171,35 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h5 className="font-medium">{goal.name}</h5>
-                      <Badge variant="outline" className={cn("text-xs", getStatusColor(status))}>
+                      {canEdit && editingGoalName === goal.id ? (
+                        <Input
+                          autoFocus
+                          value={goalNameDraft}
+                          onChange={(e) => setGoalNameDraft(e.target.value)}
+                          onBlur={() => handleSaveGoalName(type, goal.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveGoalName(type, goal.id);
+                            if (e.key === 'Escape') handleCancelEditGoalName();
+                          }}
+                          className="h-7 text-sm font-medium w-full max-w-xs"
+                          data-testid={`input-goal-name-${goal.id}`}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-1 group">
+                          <h5 className="font-medium">{goal.name}</h5>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditGoalName(goal.id, goal.name)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted"
+                              data-testid={`button-edit-goal-name-${goal.id}`}
+                            >
+                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <Badge variant="outline" className={cn("text-xs shrink-0", getStatusColor(status))}>
                         {getStatusIcon(status)}
                         <span className="ml-1">{getStatusLabel(status)}</span>
                       </Badge>
@@ -160,7 +208,7 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                       <p className="text-sm text-muted-foreground">{goal.description}</p>
                     )}
                   </div>
-                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded">
+                  <span className="text-sm font-medium bg-primary/10 text-primary px-2 py-1 rounded shrink-0">
                     Peso: {goal.weight}%
                   </span>
                 </div>
