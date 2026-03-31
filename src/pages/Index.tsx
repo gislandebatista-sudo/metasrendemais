@@ -9,6 +9,7 @@ import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
 import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
+import { MacroGoalsManager } from '@/components/dashboard/MacroGoalsManager';
 import { useMonthlyEmployees } from '@/hooks/useMonthlyEmployees';
 import { useEvaluationMonths } from '@/hooks/useEvaluationMonths';
 import { useSectors } from '@/hooks/useSectors';
@@ -29,7 +30,7 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   
   // Use the new monthly employees hook
-  const { employees, isLoading, activeMonth, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
+  const { employees, isLoading, activeMonth, fetchEmployees, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
   const { isMonthEditable, isMonthPublished, publishMonth, unpublishMonth, evaluationMonths } = useEvaluationMonths();
   const { sectors } = useSectors();
   
@@ -265,7 +266,14 @@ const Index = () => {
                 />
               </div>
 
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-2 flex flex-col gap-4">
+                <MacroGoalsManager
+                  employees={employees}
+                  selectedMonth={activeMonth}
+                  canEdit={canEdit}
+                  onRefresh={fetchEmployees}
+                />
+
                 {selectedEmployee ? (
                   <EmployeeProfile
                     employee={selectedEmployee}
@@ -277,7 +285,7 @@ const Index = () => {
                     canEdit={canEdit}
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[400px]">
+                  <div className="flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[300px]">
                     <div>
                       <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
                       <p className="text-muted-foreground mb-2">
