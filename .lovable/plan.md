@@ -1,43 +1,46 @@
 
 
-# Tabela de Gestão de Metas Macro na Aba Ranking
+# Aumentar Pop-up de Edição + Otimizar Salvamento
 
-## Resumo
+## 1. Aumentar tamanho do modal
 
-Adicionar uma tabela administrativa na aba Ranking para gerenciar metas macro de forma centralizada: criar, editar nome, excluir e associar a todos os funcionários ativos. Apenas metas macro, conforme solicitado.
+**Arquivo:** `src/components/dashboard/EmployeeModal.tsx` (linha 633)
 
-## Componente Novo: `GoalManagementTable.tsx`
+Alterar `max-w-3xl` para `max-w-6xl` e usar layout em grid de 2 colunas para dados básicos e metas lado a lado, eliminando scroll horizontal.
 
-Tabela visível apenas para admins, posicionada acima dos filtros na aba Ranking, com:
+```tsx
+<DialogContent className="w-[96vw] max-w-6xl max-h-[90vh] overflow-y-auto">
+```
 
-- Lista de metas macro únicas (agrupadas por nome a partir dos `goals` existentes)
-- Formulário inline para adicionar nova meta macro (nome, peso, prazo)
-- Para cada meta:
-  - **Editar** — editar nome da meta (atualiza `goals.name` + `goal_monthly_progress.goal_name` de todos os registros com esse nome)
-  - **Excluir** — remove a meta de todos os funcionários (deleta da tabela `goals` e `goal_monthly_progress`)
-  - **Associar a Todos** — cria a meta para todos os funcionários ativos que ainda não a possuem, incluindo snapshot em `goal_monthly_progress` para o mês selecionado
+## 2. Otimizar velocidade do salvamento
 
-## Fluxo "Associar a Todos"
+**Arquivo:** `src/hooks/useMonthlyEmployees.tsx` — função `saveEmployee`
 
-1. Buscar employees ativos
-2. Para cada um que não tem uma meta com esse nome, inserir em `goals` (employee_id, name, weight, deadline, goal_type='macro')
-3. Criar snapshot em `goal_monthly_progress` para o mês atual
-4. Recarregar dados
+Problemas atuais:
+- Linhas 215-227: Loop `for...of` atualiza cada goal sequencialmente (1 query por meta)
+- Linha 313: `fetchEmployees()` recarrega tudo do zero após salvar
 
-## Edição de Nome de Meta Já Associada
+Correções:
+- Substituir loop sequencial por batch updates usando `Promise.all`
+- Atualizar estado local diretamente após salvar em vez de chamar `fetchEmployees()`
 
-No `EmployeeProfile.tsx`, adicionar ícone de lápis ao lado do nome de cada meta (macro e setorial). Ao clicar:
-- Input inline para editar o nome
-- Ao confirmar, atualiza `goals.name` e `goal_monthly_progress.goal_name` correspondente
+```typescript
+// Antes: sequential
+for (const goal of goalsToUpdate) {
+  await supabase.from('goals').update({...}).eq('id', goal.id);
+}
 
-## Performance
+// Depois: parallel
+await Promise.all(goalsToUpdate.map(goal =>
+  supabase.from('goals').update({...}).eq('id', goal.id)
+));
 
-Paralelizar as 4 queries sequenciais em `useMonthlyEmployees.tsx` com `Promise.all`.
+// Depois do save: atualizar estado local em vez de refetch completo
+setEmployees(prev => prev.map(e => e.id === employeeId ? updatedEmployee : e));
+```
 
-## Arquivos
+## Arquivos a Modificar
 
-1. **`src/components/dashboard/GoalManagementTable.tsx`** (novo) — tabela de gestão de metas macro
-2. **`src/pages/Index.tsx`** — incluir GoalManagementTable na aba Ranking (admin only), passar selectedMonth e callback de refresh
-3. **`src/components/dashboard/EmployeeProfile.tsx`** — botão editar nome inline nas metas
-4. **`src/hooks/useMonthlyEmployees.tsx`** — `Promise.all` para queries paralelas, expor função `refreshEmployees`
+1. **`src/components/dashboard/EmployeeModal.tsx`** — largura do DialogContent
+2. **`src/hooks/useMonthlyEmployees.tsx`** — paralelizar updates + evitar refetch
 
