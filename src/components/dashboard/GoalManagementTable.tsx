@@ -400,37 +400,39 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Excluir de todos"
-                      onClick={() => handleDelete(goal.name)}
-                      disabled={!!loading}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      title="Associar a todos"
-                      onClick={() => handleAssociateToAll(goal.name, goal.weight, goal.deadline)}
-                      disabled={!!loading || goal.count === activeEmployees.length}
-                    >
-                      {loading === `associate-${goal.name}` ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Users className="w-4 h-4 mr-1" />
-                          Associar
-                        </>
-                      )}
-                    </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Excluir de todos"
+                          onClick={() => handleDelete(goal.name)}
+                          disabled={!!loading}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Associar a todos"
+                          onClick={() => handleAssociateToAll(goal.name, goal.weight, goal.deadline)}
+                          disabled={!!loading || goal.count === activeEmployees.length}
+                        >
+                          {loading === `associate-${goal.name}` ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Users className="w-4 h-4 mr-1" />
+                              Associar
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
             {uniqueMacroGoals.length === 0 && !isAdding && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
