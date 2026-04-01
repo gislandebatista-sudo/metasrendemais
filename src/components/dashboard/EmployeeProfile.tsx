@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { X, Briefcase, Building2, Target, TrendingUp, Gift, Clock, CheckCircle2, AlertCircle, XCircle, Pencil, Trash2, Save, MessageSquare, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,6 +54,22 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     open: boolean;
     goal: Goal | null;
   }>({ open: false, goal: null });
+  const [editingGoalName, setEditingGoalName] = useState<string | null>(null);
+  const [goalNameValue, setGoalNameValue] = useState('');
+
+  const handleSaveGoalName = async (goalId: string, goalType: 'macro' | 'sectoral', oldName: string) => {
+    if (!goalNameValue.trim() || goalNameValue.trim() === oldName) {
+      setEditingGoalName(null);
+      return;
+    }
+    // Update goals table
+    await supabase.from('goals').update({ name: goalNameValue.trim() }).eq('id', goalId);
+    // Update monthly progress snapshot
+    await supabase.from('goal_monthly_progress').update({ goal_name: goalNameValue.trim() }).eq('goal_id', goalId);
+    onUpdateGoal(employee.id, goalType, goalId, { name: goalNameValue.trim() });
+    setEditingGoalName(null);
+    toast.success('Nome da meta atualizado');
+  };
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
@@ -150,7 +167,40 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h5 className="font-medium">{goal.name}</h5>
+                      {editingGoalName === goal.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={goalNameValue}
+                            onChange={(e) => setGoalNameValue(e.target.value)}
+                            className="h-7 text-sm w-40"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveGoalName(goal.id, type, goal.name);
+                              if (e.key === 'Escape') setEditingGoalName(null);
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleSaveGoalName(goal.id, type, goal.name)}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingGoalName(null)}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <h5 className="font-medium">{goal.name}</h5>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => { setEditingGoalName(goal.id); setGoalNameValue(goal.name); }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </>
+                      )}
                       <Badge variant="outline" className={cn("text-xs", getStatusColor(status))}>
                         {getStatusIcon(status)}
                         <span className="ml-1">{getStatusLabel(status)}</span>
