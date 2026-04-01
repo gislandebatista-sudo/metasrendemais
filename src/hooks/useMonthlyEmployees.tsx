@@ -211,8 +211,8 @@ export function useMonthlyEmployees(selectedMonth: string) {
       const incomingIds = new Set(allGoalsWithType.map(g => g.id));
       const goalsToRemoveFromMonth = [...existingGoalIds].filter(id => !incomingIds.has(id));
 
-      // Update existing goals base data
-      for (const goal of goalsToUpdate) {
+      // Update existing goals base data (parallel)
+      await Promise.all(goalsToUpdate.map(async (goal) => {
         const { error } = await supabase
           .from('goals')
           .update({
@@ -224,7 +224,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
           })
           .eq('id', goal.id);
         if (error) throw error;
-      }
+      }));
 
       // Insert new goals
       let newGoalIds: string[] = [];
