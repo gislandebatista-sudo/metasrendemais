@@ -30,7 +30,7 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'));
   
   // Use the new monthly employees hook
-  const { employees, isLoading, activeMonth, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
+  const { employees, isLoading, activeMonth, fetchEmployees, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
   const { isMonthEditable, isMonthPublished, publishMonth, unpublishMonth, evaluationMonths } = useEvaluationMonths();
   const { sectors } = useSectors();
   
