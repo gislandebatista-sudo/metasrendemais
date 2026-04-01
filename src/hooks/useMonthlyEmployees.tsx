@@ -310,7 +310,30 @@ export function useMonthlyEmployees(selectedMonth: string) {
         }, { onConflict: 'employee_id,month' });
       if (bonusError) throw bonusError;
 
-      await fetchEmployees();
+      // Update local state directly instead of full refetch
+      const updatedEmployee: Employee = {
+        id: employeeId,
+        name: employee.name,
+        photo: employee.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.name)}&background=1e3a5f&color=fff&size=150`,
+        role: employee.role,
+        sector: employee.sector,
+        referenceMonth: activeMonth,
+        status: employee.status,
+        macroGoals: employee.macroGoals,
+        sectoralGoals: employee.sectoralGoals,
+        performanceBonus: employee.performanceBonus,
+        bonusDescription: employee.bonusDescription,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setEmployees(prev => {
+        const exists = prev.some(e => e.id === employeeId);
+        if (exists) {
+          return prev.map(e => e.id === employeeId ? updatedEmployee : e);
+        }
+        return [...prev, updatedEmployee];
+      });
+
       toast.success(existing ? 'Colaborador atualizado!' : 'Colaborador cadastrado!');
       return true;
     } catch (error) {
