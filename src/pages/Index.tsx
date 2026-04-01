@@ -4,6 +4,7 @@ import { MainStatsCards } from '@/components/dashboard/MainStatsCards';
 import { DashboardStatsCards } from '@/components/dashboard/DashboardStatsCards';
 import { EmployeeFilter } from '@/components/dashboard/EmployeeFilter';
 import { RankingTable } from '@/components/dashboard/RankingTable';
+import { GoalManagementTable } from '@/components/dashboard/GoalManagementTable';
 import { EmployeeProfile } from '@/components/dashboard/EmployeeProfile';
 import { PerformanceCharts } from '@/components/dashboard/PerformanceCharts';
 import { EmployeeModal } from '@/components/dashboard/EmployeeModal';
