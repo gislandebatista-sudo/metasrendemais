@@ -329,47 +329,77 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
                 </TableCell>
               </TableRow>
             )}
-            {uniqueMacroGoals.map((goal) => (
+            {uniqueMacroGoals.map((goal) => {
+              const isEditing = editingGoal?.name === goal.name;
+              return (
               <TableRow key={goal.name}>
                 <TableCell>
-                  {editingGoal === goal.name ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="h-8"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleEditName(goal.name);
-                          if (e.key === 'Escape') setEditingGoal(null);
-                        }}
-                      />
-                      <Button size="sm" variant="ghost" onClick={() => handleEditName(goal.name)} disabled={loading === `edit-${goal.name}`}>
-                        {loading === `edit-${goal.name}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-primary" />}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingGoal(null)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  {isEditing ? (
+                    <Input
+                      value={editingGoal.editName}
+                      onChange={(e) => setEditingGoal({ ...editingGoal, editName: e.target.value })}
+                      className="h-8"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleEdit(goal.name, goal.weight, goal.deadline);
+                        if (e.key === 'Escape') setEditingGoal(null);
+                      }}
+                    />
                   ) : (
                     <span className="font-medium">{goal.name}</span>
                   )}
                 </TableCell>
-                <TableCell>{goal.weight}%</TableCell>
-                <TableCell>{goal.deadline}</TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editingGoal.editWeight}
+                      onChange={(e) => setEditingGoal({ ...editingGoal, editWeight: e.target.value })}
+                      className="h-8 w-16"
+                      min="0"
+                      max="100"
+                    />
+                  ) : (
+                    <>{goal.weight}%</>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={editingGoal.editDeadline}
+                      onChange={(e) => setEditingGoal({ ...editingGoal, editDeadline: e.target.value })}
+                      className="h-8"
+                    />
+                  ) : (
+                    goal.deadline
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{goal.count}/{activeEmployees.length}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Editar nome"
-                      onClick={() => { setEditingGoal(goal.name); setEditName(goal.name); }}
-                      disabled={!!loading}
-                    >
-                      <Pencil className="w-4 h-4" />
+                    {isEditing ? (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(goal.name, goal.weight, goal.deadline)} disabled={loading === `edit-${goal.name}`}>
+                          {loading === `edit-${goal.name}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-primary" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingGoal(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Editar meta"
+                          onClick={() => setEditingGoal({ name: goal.name, editName: goal.name, editWeight: String(goal.weight), editDeadline: goal.deadline })}
+                          disabled={!!loading}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                     </Button>
                     <Button
                       size="sm"
