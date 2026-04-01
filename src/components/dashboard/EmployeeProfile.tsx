@@ -167,7 +167,40 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h5 className="font-medium">{goal.name}</h5>
+                      {editingGoalName === goal.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={goalNameValue}
+                            onChange={(e) => setGoalNameValue(e.target.value)}
+                            className="h-7 text-sm w-40"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveGoalName(goal.id, type, goal.name);
+                              if (e.key === 'Escape') setEditingGoalName(null);
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleSaveGoalName(goal.id, type, goal.name)}>
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingGoalName(null)}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <h5 className="font-medium">{goal.name}</h5>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => { setEditingGoalName(goal.id); setGoalNameValue(goal.name); }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </>
+                      )}
                       <Badge variant="outline" className={cn("text-xs", getStatusColor(status))}>
                         {getStatusIcon(status)}
                         <span className="ml-1">{getStatusLabel(status)}</span>
