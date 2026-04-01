@@ -34,8 +34,7 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
   const [newName, setNewName] = useState('');
   const [newWeight, setNewWeight] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
-  const [editingGoal, setEditingGoal] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
+  const [editingGoal, setEditingGoal] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
   // Extract unique macro goals from all employees
