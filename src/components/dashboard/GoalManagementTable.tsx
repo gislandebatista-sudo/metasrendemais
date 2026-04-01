@@ -219,7 +219,7 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
   };
 
   const handleDelete = async (goalName: string) => {
-    if (!confirm(`Excluir a meta "${goalName}" de todos os colaboradores?`)) return;
+    if (!confirm(`Excluir a meta "${goalName}" de todos os colaboradores no mês selecionado?`)) return;
 
     setLoading(`delete-${goalName}`);
     try {
@@ -234,22 +234,16 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
       if (goals && goals.length > 0) {
         const goalIds = goals.map(g => g.id);
 
-        // Delete monthly progress first
+        // Mark as deleted only for the selected month (preserve other months)
         const { error: progressError } = await supabase
           .from('goal_monthly_progress')
-          .delete()
-          .in('goal_id', goalIds);
+          .update({ is_deleted: true })
+          .in('goal_id', goalIds)
+          .eq('month', selectedMonth);
         if (progressError) throw progressError;
-
-        // Delete goals
-        const { error: goalsError } = await supabase
-          .from('goals')
-          .delete()
-          .in('id', goalIds);
-        if (goalsError) throw goalsError;
       }
 
-      toast.success(`Meta "${goalName}" excluída de todos os colaboradores`);
+      toast.success(`Meta "${goalName}" excluída do mês selecionado`);
       onRefresh();
     } catch (error) {
       console.error('Error deleting goal:', error);
