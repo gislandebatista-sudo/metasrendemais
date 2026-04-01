@@ -22,6 +22,13 @@ interface UniqueMacroGoal {
   count: number;
 }
 
+interface EditingState {
+  name: string;
+  editName: string;
+  editWeight: string;
+  editDeadline: string;
+}
+
 export function GoalManagementTable({ employees, selectedMonth, onRefresh }: GoalManagementTableProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
