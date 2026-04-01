@@ -341,6 +341,7 @@ export type Database = {
           last_modified_by: string | null
           name: string
           observations: string | null
+          restrict_to_month: string | null
           updated_at: string
           weight: number
         }
@@ -356,6 +357,7 @@ export type Database = {
           last_modified_by?: string | null
           name: string
           observations?: string | null
+          restrict_to_month?: string | null
           updated_at?: string
           weight: number
         }
@@ -371,6 +373,7 @@ export type Database = {
           last_modified_by?: string | null
           name?: string
           observations?: string | null
+          restrict_to_month?: string | null
           updated_at?: string
           weight?: number
         }
