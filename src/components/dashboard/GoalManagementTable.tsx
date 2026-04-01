@@ -180,36 +180,39 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
     }
   };
 
-  const handleEditName = async (oldName: string) => {
-    if (!editName.trim() || editName.trim() === oldName) {
+  const handleEdit = async (oldName: string, oldWeight: number, oldDeadline: string) => {
+    if (!editingGoal) return;
+    const { editName, editWeight, editDeadline } = editingGoal;
+    const trimmedName = editName.trim();
+    const newWeight = parseFloat(editWeight);
+    const noChanges = trimmedName === oldName && newWeight === oldWeight && editDeadline === oldDeadline;
+    if (!trimmedName || !editWeight || !editDeadline || noChanges) {
       setEditingGoal(null);
       return;
     }
 
     setLoading(`edit-${oldName}`);
     try {
-      // Update goals table
       const { error: goalsError } = await supabase
         .from('goals')
-        .update({ name: editName.trim() })
+        .update({ name: trimmedName, weight: newWeight, deadline: editDeadline })
         .eq('name', oldName)
         .eq('goal_type', 'macro');
       if (goalsError) throw goalsError;
 
-      // Update goal_monthly_progress snapshots
       const { error: progressError } = await supabase
         .from('goal_monthly_progress')
-        .update({ goal_name: editName.trim() })
+        .update({ goal_name: trimmedName, goal_weight: newWeight, goal_deadline: editDeadline })
         .eq('goal_name', oldName)
         .eq('goal_type', 'macro');
       if (progressError) throw progressError;
 
-      toast.success(`Meta renomeada para "${editName.trim()}"`);
+      toast.success(`Meta "${trimmedName}" atualizada`);
       setEditingGoal(null);
       onRefresh();
     } catch (error) {
-      console.error('Error editing goal name:', error);
-      toast.error('Erro ao editar nome da meta');
+      console.error('Error editing goal:', error);
+      toast.error('Erro ao editar meta');
     } finally {
       setLoading(null);
     }
