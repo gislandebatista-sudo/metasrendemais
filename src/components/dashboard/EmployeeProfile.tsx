@@ -54,6 +54,22 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
     open: boolean;
     goal: Goal | null;
   }>({ open: false, goal: null });
+  const [editingGoalName, setEditingGoalName] = useState<string | null>(null);
+  const [goalNameValue, setGoalNameValue] = useState('');
+
+  const handleSaveGoalName = async (goalId: string, goalType: 'macro' | 'sectoral', oldName: string) => {
+    if (!goalNameValue.trim() || goalNameValue.trim() === oldName) {
+      setEditingGoalName(null);
+      return;
+    }
+    // Update goals table
+    await supabase.from('goals').update({ name: goalNameValue.trim() }).eq('id', goalId);
+    // Update monthly progress snapshot
+    await supabase.from('goal_monthly_progress').update({ goal_name: goalNameValue.trim() }).eq('goal_id', goalId);
+    onUpdateGoal(employee.id, goalType, goalId, { name: goalNameValue.trim() });
+    setEditingGoalName(null);
+    toast.success('Nome da meta atualizado');
+  };
 
   const totalPerformance = calculateTotalPerformance(employee);
   const macroPerformance = calculateGoalsPerformance(employee.macroGoals);
