@@ -235,7 +235,14 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="employees" className="space-y-6">
+            {isAdmin && canEdit && (
+              <GoalManagementTable
+                employees={employees}
+                selectedMonth={activeMonth}
+                onRefresh={fetchEmployees}
+              />
+            )}
+
             <MainStatsCards employees={employees} />
 
             <EmployeeFilter
