@@ -31,36 +31,25 @@ export function useMonthlyEmployees(selectedMonth: string) {
     try {
       setIsLoading(true);
 
-      // Fetch employees
-      const { data: employeesData, error: employeesError } = isAdmin
-        ? await supabase.from('employees').select('*').order('name')
-        : await supabase.from('employees_secure' as any).select('*').order('name');
+      // Fetch all data in parallel for performance
+      const [employeesRes, goalsRes, progressRes, bonusRes] = await Promise.all([
+        isAdmin
+          ? supabase.from('employees').select('*').order('name')
+          : supabase.from('employees_secure' as any).select('*').order('name'),
+        supabase.from('goals').select('id, employee_id, goal_type, name, description, weight, deadline'),
+        supabase.from('goal_monthly_progress').select('*').eq('month', activeMonth).eq('is_deleted', false),
+        supabase.from('employee_monthly_bonus').select('*').eq('month', activeMonth),
+      ]);
 
-      if (employeesError) throw employeesError;
+      if (employeesRes.error) throw employeesRes.error;
+      if (goalsRes.error) throw goalsRes.error;
+      if (progressRes.error) throw progressRes.error;
+      if (bonusRes.error) throw bonusRes.error;
 
-      // Fetch goals (base templates) - needed for employee_id mapping
-      const { data: goalsData, error: goalsError } = await supabase
-        .from('goals')
-        .select('id, employee_id, goal_type, name, description, weight, deadline');
-
-      if (goalsError) throw goalsError;
-
-      // Fetch monthly progress (snapshots) for the selected month, excluding soft-deleted
-      const { data: progressData, error: progressError } = await supabase
-        .from('goal_monthly_progress')
-        .select('*')
-        .eq('month', activeMonth)
-        .eq('is_deleted', false);
-
-      if (progressError) throw progressError;
-
-      // Fetch monthly bonuses for the selected month
-      const { data: bonusData, error: bonusError } = await supabase
-        .from('employee_monthly_bonus')
-        .select('*')
-        .eq('month', activeMonth);
-
-      if (bonusError) throw bonusError;
+      const employeesData = employeesRes.data;
+      const goalsData = goalsRes.data;
+      const progressData = progressRes.data;
+      const bonusData = bonusRes.data;
 
       // Build a goal_id -> employee_id lookup from goals table
       const goalToEmployee = new Map<string, string>();
