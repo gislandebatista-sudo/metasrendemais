@@ -137,6 +137,7 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
         deadline,
         goal_type: 'macro',
         achieved: 0,
+        restrict_to_month: selectedMonth,
       }));
 
       const { data: insertedGoals, error } = await supabase
