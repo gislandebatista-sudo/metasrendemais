@@ -1,40 +1,43 @@
 
 
-# Plan: Goal Name Filter, Remove Rounding, Fix Ranking Calculation
+# Tabela de Gestão de Metas Macro na Aba Ranking
 
-## 1. Add Goal Name Filter to EmployeeFilter
+## Resumo
 
-**What**: Add a new dropdown/select in the filter bar that lists all unique goal names across employees. When a goal name is selected (e.g., "DNA JVM"), only employees who have that goal are shown, displaying their individual percentages for that specific goal.
+Adicionar uma tabela administrativa na aba Ranking para gerenciar metas macro de forma centralizada: criar, editar nome, excluir e associar a todos os funcionários ativos. Apenas metas macro, conforme solicitado.
 
-**How**:
-- In `Index.tsx`: Add state `selectedGoalName` and compute a list of all unique goal names from all employees' goals (macro + sectoral). Pass to `EmployeeFilter`.
-- In `EmployeeFilter.tsx`: Add a new `Select` dropdown for goal name filtering, listing all available goal names.
-- Filter logic in `Index.tsx`: When a goal name is selected, filter `employees` to only those who have a goal matching that name.
+## Componente Novo: `GoalManagementTable.tsx`
 
-## 2. Remove All Rounding from Percentages
+Tabela visível apenas para admins, posicionada acima dos filtros na aba Ranking, com:
 
-**What**: Remove `.toFixed(1)` and any rounding throughout the UI. Display exact decimal values as stored.
+- Lista de metas macro únicas (agrupadas por nome a partir dos `goals` existentes)
+- Formulário inline para adicionar nova meta macro (nome, peso, prazo)
+- Para cada meta:
+  - **Editar** — editar nome da meta (atualiza `goals.name` + `goal_monthly_progress.goal_name` de todos os registros com esse nome)
+  - **Excluir** — remove a meta de todos os funcionários (deleta da tabela `goals` e `goal_monthly_progress`)
+  - **Associar a Todos** — cria a meta para todos os funcionários ativos que ainda não a possuem, incluindo snapshot em `goal_monthly_progress` para o mês selecionado
 
-**Files affected**:
-- `src/components/dashboard/EmployeeProfile.tsx` — Lines 186, 187, 209, 218, 359, 370, 381: Replace `.toFixed(1)` with direct value display (no rounding). Use a helper to show the raw number without trailing zeros where appropriate.
-- `src/components/dashboard/RankingTable.tsx` — Line with `employee.totalPerformance.toFixed(1)`: Remove rounding.
-- `src/types/employee.ts` — `calculateTotalPerformance` and `calculateGoalsPerformance`: Ensure no rounding occurs (currently they don't round, which is correct).
-- Check `MainStatsCards.tsx`, `DashboardStatsCards.tsx`, `PerformanceCharts.tsx`, `ExportTab.tsx` for any `.toFixed()` calls.
+## Fluxo "Associar a Todos"
 
-**Approach**: Create a utility function `formatPercent(value: number): string` that displays the number with all its meaningful decimal places (no trailing zeros, no forced rounding). Use it everywhere percentages are displayed.
+1. Buscar employees ativos
+2. Para cada um que não tem uma meta com esse nome, inserir em `goals` (employee_id, name, weight, deadline, goal_type='macro')
+3. Criar snapshot em `goal_monthly_progress` para o mês atual
+4. Recarregar dados
 
-## 3. Fix Ranking Calculation Display
+## Edição de Nome de Meta Já Associada
 
-The calculation logic in `calculateTotalPerformance` already does a direct sum without rounding. The issue is purely in the **display** layer (`.toFixed(1)` calls). Fixing item #2 above automatically fixes this.
+No `EmployeeProfile.tsx`, adicionar ícone de lápis ao lado do nome de cada meta (macro e setorial). Ao clicar:
+- Input inline para editar o nome
+- Ao confirmar, atualiza `goals.name` e `goal_monthly_progress.goal_name` correspondente
 
-Verify: `75.54 + 19.24 = 94.78` — the `calculateTotalPerformance` function sums `macroSum + sectoralSum + bonus` and caps at 105. No rounding in the function itself. The fix is removing `.toFixed(1)` from the display.
+## Performance
 
-## Files to Modify
+Paralelizar as 4 queries sequenciais em `useMonthlyEmployees.tsx` com `Promise.all`.
 
-1. **`src/lib/utils.ts`** — Add `formatPercent()` utility
-2. **`src/components/dashboard/EmployeeFilter.tsx`** — Add goal name select dropdown
-3. **`src/pages/Index.tsx`** — Add `selectedGoalName` state and filtering logic, compute available goal names, pass props
-4. **`src/components/dashboard/EmployeeProfile.tsx`** — Replace all `.toFixed(1)` with `formatPercent()`
-5. **`src/components/dashboard/RankingTable.tsx`** — Replace `.toFixed(1)` with `formatPercent()`
-6. **`src/components/dashboard/MainStatsCards.tsx`**, **`DashboardStatsCards.tsx`**, **`PerformanceCharts.tsx`**, **`ExportTab.tsx`** — Audit and replace any rounding
+## Arquivos
+
+1. **`src/components/dashboard/GoalManagementTable.tsx`** (novo) — tabela de gestão de metas macro
+2. **`src/pages/Index.tsx`** — incluir GoalManagementTable na aba Ranking (admin only), passar selectedMonth e callback de refresh
+3. **`src/components/dashboard/EmployeeProfile.tsx`** — botão editar nome inline nas metas
+4. **`src/hooks/useMonthlyEmployees.tsx`** — `Promise.all` para queries paralelas, expor função `refreshEmployees`
 
