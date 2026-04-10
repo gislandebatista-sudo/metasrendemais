@@ -88,7 +88,7 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
 
           {/* User Menu + Logout */}
           <UserMenu />
-          <LogoutButton />
+          <LogoutButtonInline />
         </div>
       </div>
     </header>
