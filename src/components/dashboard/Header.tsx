@@ -1,7 +1,8 @@
-import { Users, Send, Undo2, EyeOff, Eye } from 'lucide-react';
+import { Users, Send, Undo2, EyeOff, Eye, LogOut } from 'lucide-react';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import logoRende from '@/assets/logo-rende-new.png';
@@ -19,6 +20,7 @@ interface HeaderProps {
 }
 
 export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublished, onPublish, onUnpublish, isAdmin, hidePercentages, onTogglePercentages }: HeaderProps) {
+  const { signOut } = useAuth();
   return (
     <header className="bg-card border border-border p-6 rounded-2xl mb-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -85,8 +87,12 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* User Menu */}
+          {/* User Menu + Logout */}
           <UserMenu />
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive" onClick={signOut}>
+            <LogOut className="w-3.5 h-3.5" />
+            Sair
+          </Button>
         </div>
       </div>
     </header>
