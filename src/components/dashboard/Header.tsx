@@ -20,6 +20,7 @@ interface HeaderProps {
 }
 
 export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublished, onPublish, onUnpublish, isAdmin, hidePercentages, onTogglePercentages }: HeaderProps) {
+  const { signOut } = useAuth();
   return (
     <header className="bg-card border border-border p-6 rounded-2xl mb-6 shadow-lg">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
