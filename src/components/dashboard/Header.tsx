@@ -85,8 +85,9 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
           {/* Theme Toggle */}
           <ThemeToggle />
 
-          {/* User Menu */}
+          {/* User Menu + Logout */}
           <UserMenu />
+          <LogoutButton />
         </div>
       </div>
     </header>
