@@ -89,7 +89,10 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
 
           {/* User Menu + Logout */}
           <UserMenu />
-          <LogoutButtonInline />
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive" onClick={signOut}>
+            <LogOut className="w-3.5 h-3.5" />
+            Sair
+          </Button>
         </div>
       </div>
     </header>
