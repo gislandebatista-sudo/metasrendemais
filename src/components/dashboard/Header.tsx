@@ -1,7 +1,8 @@
-import { Users, Send, Undo2, EyeOff, Eye } from 'lucide-react';
+import { Users, Send, Undo2, EyeOff, Eye, LogOut } from 'lucide-react';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import logoRende from '@/assets/logo-rende-new.png';
