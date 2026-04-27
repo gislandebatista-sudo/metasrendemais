@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertCircle, Loader2, LogIn, UserPlus, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { brand } from '@/config/brand';
 
 const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'A senha deve ter no mínimo 6 caracteres');
@@ -256,7 +257,7 @@ export default function Auth() {
               <Target className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Rende +
+              {brand.name}
             </h1>
             <p className="text-muted-foreground mt-2">Vincule sua conta ao seu cadastro</p>
           </div>
@@ -322,10 +323,10 @@ export default function Auth() {
             <Target className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Rende +
+            {brand.name}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Sistema de Gestão de Performance
+            {brand.tagline}
           </p>
         </div>
 

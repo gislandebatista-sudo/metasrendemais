@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import logoRende from '@/assets/logo-rende-new.png';
+import { brand } from '@/config/brand';
 
 interface HeaderProps {
   selectedMonth: string;
@@ -28,15 +29,15 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
         <div className="flex items-center gap-5">
           <img 
             src={logoRende} 
-            alt="Rende+ Logo" 
+            alt={`${brand.name} Logo`} 
             className="h-14 md:h-16 w-auto object-contain"
           />
           <div className="border-l-2 border-border pl-5">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight text-foreground">
-              Gerenciamento de metas
+              {brand.dashboardTitle}
             </h1>
             <p className="text-muted-foreground text-lg md:text-xl font-semibold mt-0.5">
-              2026
+              {brand.dashboardYear}
             </p>
           </div>
         </div>
