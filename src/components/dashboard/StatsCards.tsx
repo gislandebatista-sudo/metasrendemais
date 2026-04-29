@@ -65,19 +65,26 @@ export function StatsCards({ employees }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
       {stats.map((stat, index) => (
-        <Card key={index} className="shadow-md overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">{stat.title}</p>
-                <p className="text-xl font-bold mt-1">{stat.value}</p>
+        <Card
+          key={index}
+          className="overflow-hidden group hover:border-primary/40 transition-all duration-200 animate-fade-in-up"
+          style={{ animationDelay: `${index * 40}ms` }}
+        >
+          <CardContent className="p-4 relative">
+            {/* Subtle gradient wash on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+            <div className="flex items-start justify-between relative">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium font-mono-accent">{stat.title}</p>
+                <p className="text-2xl font-semibold mt-1.5 tabular-nums tracking-tight text-foreground">{stat.value}</p>
                 {stat.subtitle && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{stat.subtitle}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{stat.subtitle}</p>
                 )}
               </div>
-              <div className={`p-2 rounded-lg ${stat.color}`}>
+              <div className={`p-2 rounded-lg ${stat.color} shrink-0 shadow-sm`}>
                 <stat.icon className="w-4 h-4" />
               </div>
             </div>
