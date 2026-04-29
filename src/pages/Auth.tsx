@@ -241,8 +241,8 @@ export default function Auth() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -250,21 +250,26 @@ export default function Auth() {
   // Google user needs linking
   if (needsLinking && user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/50 p-4">
-        <div className="w-full max-w-md">
+      <div className="relative min-h-screen flex items-center justify-center bg-background p-4 overflow-hidden">
+        <div className="absolute inset-0 bg-grid pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="relative w-full max-w-md animate-fade-in-up">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-              <Target className="w-8 h-8 text-primary" />
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border shadow-elevated mb-5">
+              <Target className="w-6 h-6 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              {brand.name}
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+              {brand.name.replace('+', '')}<span className="text-gradient-ember">+</span>
             </h1>
-            <p className="text-muted-foreground mt-2">Vincule sua conta ao seu cadastro</p>
+            <p className="text-muted-foreground text-sm mt-2 font-mono-accent">
+              vincule sua conta
+            </p>
           </div>
 
-          <Card className="border-t-4 border-t-primary shadow-xl">
+          <Card className="glass-strong shadow-elevated border-border">
             <CardHeader className="pb-4">
-              <h2 className="text-lg font-semibold">Selecione seu nome</h2>
+              <h2 className="text-base font-semibold tracking-tight">Selecione seu nome</h2>
               <p className="text-sm text-muted-foreground">
                 Para completar seu cadastro, selecione seu nome na lista abaixo.
               </p>
@@ -299,9 +304,9 @@ export default function Auth() {
                 </div>
               )}
 
-              <Button 
-                className="w-full gap-2" 
-                onClick={handleLinkGoogleUser} 
+              <Button
+                className="w-full gap-2 shadow-glow-primary"
+                onClick={handleLinkGoogleUser}
                 disabled={isLinking || !linkingEmployeeId}
               >
                 {isLinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
@@ -315,22 +320,27 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/50 p-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center bg-background p-4 overflow-hidden">
+      {/* Atmospheric backdrop */}
+      <div className="absolute inset-0 bg-grid pointer-events-none" />
+      <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-primary/15 blur-[140px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[10%] w-[400px] h-[400px] bg-primary-glow/10 blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="relative w-full max-w-md animate-fade-in-up">
         {/* Logo / Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Target className="w-8 h-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-card border border-border shadow-elevated mb-5">
+            <Target className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            {brand.name}
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground leading-none">
+            {brand.name.replace('+', '').trim()} <span className="text-gradient-ember font-display-serif text-5xl">+</span>
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground text-sm mt-3 font-mono-accent uppercase tracking-wider">
             {brand.tagline}
           </p>
         </div>
 
-        <Card className="border-t-4 border-t-primary shadow-xl">
+        <Card className="glass-strong shadow-elevated border-border">
           <Tabs defaultValue="login" className="w-full" onValueChange={handleTabChange}>
             <CardHeader className="pb-4">
               <TabsList className="grid w-full grid-cols-2">

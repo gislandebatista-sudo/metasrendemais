@@ -23,74 +23,78 @@ interface HeaderProps {
 export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublished, onPublish, onUnpublish, isAdmin, hidePercentages, onTogglePercentages }: HeaderProps) {
   const { signOut } = useAuth();
   return (
-    <header className="bg-card border border-border p-6 rounded-2xl mb-6 shadow-lg">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        {/* Logo + Title Section */}
+    <header className="glass-strong rounded-2xl mb-6 shadow-elevated overflow-hidden">
+      {/* Subtle ember accent line */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+
+      <div className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* ─── Logo + Title ─── */}
         <div className="flex items-center gap-5">
-          <img 
-            src={logoRende} 
-            alt={`${brand.name} Logo`} 
-            className="h-14 md:h-16 w-auto object-contain"
-          />
-          <div className="border-l-2 border-border pl-5">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight leading-tight text-foreground">
+          <div className="relative">
+            <img
+              src={logoRende}
+              alt={`${brand.name} Logo`}
+              className="h-12 md:h-14 w-auto object-contain relative z-10"
+            />
+            <div className="absolute inset-0 -m-2 bg-primary/20 blur-2xl rounded-full -z-0" />
+          </div>
+          <div className="border-l border-border/60 pl-5">
+            <h1 className="text-lg md:text-xl font-semibold tracking-tight leading-tight text-foreground">
               {brand.dashboardTitle}
             </h1>
-            <p className="text-muted-foreground text-lg md:text-xl font-semibold mt-0.5">
-              {brand.dashboardYear}
+            <p className="font-mono-accent text-primary text-sm md:text-base font-medium mt-0.5">
+              — {brand.dashboardYear}
             </p>
           </div>
         </div>
-        
-        {/* Controls Section */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg">
-            <Users className="w-5 h-5" />
-            <span className="font-medium">{totalEmployees} colaboradores ativos</span>
+
+        {/* ─── Controls ─── */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg text-xs font-medium">
+            <Users className="w-3.5 h-3.5" />
+            <span className="tabular-nums">{totalEmployees}</span>
+            <span className="text-primary/70">colaboradores</span>
           </div>
 
-          {/* Toggle Percentages */}
           {onTogglePercentages && (
-            <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={onTogglePercentages}>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 hover:bg-secondary" onClick={onTogglePercentages}>
               {hidePercentages ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              {hidePercentages ? 'Mostrar %' : 'Ocultar %'}
+              {hidePercentages ? 'Mostrar' : 'Ocultar'}
             </Button>
           )}
-          
-          {/* Publication Status + Actions (Admin only) */}
+
           {isAdmin && (
             <div className="flex items-center gap-2">
-              <Badge variant={isPublished ? 'default' : 'secondary'} className="gap-1">
-                {isPublished ? '✓ Publicado' : 'Rascunho'}
+              <Badge
+                variant={isPublished ? 'default' : 'secondary'}
+                className={`gap-1 h-8 px-2.5 ${isPublished ? 'bg-performance-high/15 text-performance-high border border-performance-high/30 hover:bg-performance-high/20' : 'bg-secondary text-muted-foreground border border-border'}`}
+              >
+                {isPublished ? '● Publicado' : '○ Rascunho'}
               </Badge>
               {isPublished ? (
-                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={onUnpublish}>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8" onClick={onUnpublish}>
                   <Undo2 className="w-3.5 h-3.5" />
                   Despublicar
                 </Button>
               ) : (
-                <Button size="sm" className="gap-1 text-xs" onClick={onPublish}>
+                <Button size="sm" className="gap-1.5 text-xs h-8 shadow-glow-primary" onClick={onPublish}>
                   <Send className="w-3.5 h-3.5" />
                   Publicar
                 </Button>
               )}
             </div>
           )}
-          
-          {/* Month Selector with navigation */}
-          <div className="bg-muted rounded-lg">
-            <MonthSelector 
+
+          <div className="bg-secondary/60 rounded-lg border border-border/60">
+            <MonthSelector
               selectedMonth={selectedMonth}
               onMonthChange={onMonthChange}
             />
           </div>
 
-          {/* Theme Toggle */}
           <ThemeToggle />
-
-          {/* User Menu + Logout */}
           <UserMenu />
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive hover:text-destructive" onClick={signOut}>
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={signOut}>
             <LogOut className="w-3.5 h-3.5" />
             Sair
           </Button>
