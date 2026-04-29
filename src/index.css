@@ -337,6 +337,46 @@
     animation: pulse-glow 2s ease-out infinite;
   }
 
+  /* ─── Premium card surface (Linear/Stripe inspired) ─── */
+  .card-premium {
+    position: relative;
+    background:
+      linear-gradient(180deg, hsl(var(--card) / 0.6) 0%, hsl(var(--card) / 0.95) 100%);
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+      0 0 0 1px hsl(var(--border) / 0.4),
+      0 8px 32px -12px hsl(0 0% 0% / 0.5);
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  }
+  .card-premium:hover {
+    border-color: hsl(var(--border));
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+      0 0 0 1px hsl(var(--border)),
+      0 16px 40px -12px hsl(0 0% 0% / 0.6);
+  }
+
+  /* ─── Hairline divider (Stripe-style) ─── */
+  .divider-hairline {
+    background: linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent);
+    height: 1px;
+  }
+
+  /* ─── KPI display number (huge, refined) ─── */
+  .kpi-number {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  /* ─── Soft focus ring (modern SaaS) ─── */
+  .focus-ring-premium {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
   /* Ensure content sits above the noise overlay */
   #root { position: relative; z-index: 1; }
 }
