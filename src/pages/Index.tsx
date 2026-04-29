@@ -218,19 +218,19 @@ const Index = () => {
         <Tabs defaultValue="employees" className="w-full">
           <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-6">
             <TabsTrigger value="employees" className="gap-2">
-              <Users className="w-4 h-4" />
+              <Users className="w-3.5 h-3.5" />
               Ranking
             </TabsTrigger>
             <TabsTrigger value="list" className="gap-2">
-              <List className="w-4 h-4" />
+              <List className="w-3.5 h-3.5" />
               Colaboradores
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
-              <BarChart3 className="w-4 h-4" />
+              <BarChart3 className="w-3.5 h-3.5" />
               Dashboards
             </TabsTrigger>
             <TabsTrigger value="export" className="gap-2">
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
               Exportar
             </TabsTrigger>
           </TabsList>
