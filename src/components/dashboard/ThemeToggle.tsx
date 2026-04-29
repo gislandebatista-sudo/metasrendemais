@@ -10,13 +10,13 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="h-10 w-10 rounded-full bg-primary-foreground/10 hover:bg-primary-foreground/20"
+      className="h-8 w-8 rounded-lg hover:bg-secondary border border-border/60"
       title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
     >
       {theme === 'dark' ? (
-        <Sun className="h-5 w-5 text-primary-foreground" />
+        <Sun className="h-3.5 w-3.5 text-foreground" />
       ) : (
-        <Moon className="h-5 w-5 text-primary-foreground" />
+        <Moon className="h-3.5 w-3.5 text-foreground" />
       )}
       <span className="sr-only">Alternar tema</span>
     </Button>
