@@ -72,37 +72,37 @@
   }
 
   .dark {
-    /* ─── PRIMARY THEME: Ember Console ─── */
-    /* Deep cosmic neutrals, never pure black */
-    --background: 220 25% 5%;
-    --foreground: 30 15% 96%;
+    /* ─── PRIMARY THEME: Ember Console (refined) ─── */
+    /* Deep cosmic neutrals, calibrated for OLED depth */
+    --background: 224 32% 4%;
+    --foreground: 30 15% 97%;
 
-    --card: 222 22% 8%;
-    --card-foreground: 30 15% 96%;
+    --card: 224 24% 7%;
+    --card-foreground: 30 15% 97%;
 
-    --popover: 222 22% 7%;
-    --popover-foreground: 30 15% 96%;
+    --popover: 224 26% 6%;
+    --popover-foreground: 30 15% 97%;
 
     /* Ember orange — saturated, luminous */
     --primary: 18 95% 58%;
-    --primary-foreground: 220 25% 5%;
+    --primary-foreground: 224 32% 4%;
     --primary-glow: 24 100% 65%;
 
-    --secondary: 220 15% 14%;
-    --secondary-foreground: 30 15% 92%;
+    --secondary: 222 18% 12%;
+    --secondary-foreground: 30 15% 94%;
 
-    --muted: 220 15% 12%;
-    --muted-foreground: 220 8% 60%;
+    --muted: 222 18% 10%;
+    --muted-foreground: 220 9% 62%;
 
     --accent: 18 95% 58%;
-    --accent-foreground: 220 25% 5%;
+    --accent-foreground: 224 32% 4%;
 
     --destructive: 0 72% 56%;
     --destructive-foreground: 0 0% 100%;
 
     /* Hairline borders — barely visible, define structure */
-    --border: 220 15% 16%;
-    --input: 220 15% 14%;
+    --border: 222 18% 14%;
+    --input: 222 18% 12%;
     --ring: 18 95% 58%;
 
     --performance-low: 0 72% 58%;
@@ -149,11 +149,12 @@
     letter-spacing: -0.011em;
   }
 
-  /* Atmospheric backdrop in dark mode — subtle ember glow + grain */
+  /* Atmospheric backdrop in dark mode — premium mesh + grain */
   .dark body {
     background-image:
-      radial-gradient(ellipse 80% 60% at 50% -20%, hsl(18 95% 58% / 0.08), transparent 60%),
-      radial-gradient(ellipse 60% 50% at 100% 100%, hsl(24 100% 65% / 0.04), transparent 70%);
+      radial-gradient(ellipse 70% 50% at 15% -10%, hsl(18 95% 58% / 0.10), transparent 55%),
+      radial-gradient(ellipse 55% 45% at 95% 0%, hsl(280 75% 60% / 0.05), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 50% 110%, hsl(24 100% 65% / 0.06), transparent 65%);
     background-attachment: fixed;
   }
 
@@ -163,9 +164,9 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.4;
+    opacity: 0.35;
     mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   h1, h2, h3, h4, h5 {
@@ -334,6 +335,46 @@
   }
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-out infinite;
+  }
+
+  /* ─── Premium card surface (Linear/Stripe inspired) ─── */
+  .card-premium {
+    position: relative;
+    background:
+      linear-gradient(180deg, hsl(var(--card) / 0.6) 0%, hsl(var(--card) / 0.95) 100%);
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+      0 0 0 1px hsl(var(--border) / 0.4),
+      0 8px 32px -12px hsl(0 0% 0% / 0.5);
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+  }
+  .card-premium:hover {
+    border-color: hsl(var(--border));
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+      0 0 0 1px hsl(var(--border)),
+      0 16px 40px -12px hsl(0 0% 0% / 0.6);
+  }
+
+  /* ─── Hairline divider (Stripe-style) ─── */
+  .divider-hairline {
+    background: linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent);
+    height: 1px;
+  }
+
+  /* ─── KPI display number (huge, refined) ─── */
+  .kpi-number {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  /* ─── Soft focus ring (modern SaaS) ─── */
+  .focus-ring-premium {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
   /* Ensure content sits above the noise overlay */
