@@ -47,17 +47,30 @@ export function MainStatsCards({ employees }: MainStatsCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {stats.map((stat, index) => (
-        <Card key={index} className="shadow-md overflow-hidden">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">{stat.title}</p>
-                <p className="text-2xl font-bold mt-1">{stat.value}</p>
+        <Card
+          key={index}
+          className="group overflow-hidden hover:border-primary/30 animate-fade-in-up"
+          style={{ animationDelay: `${index * 60}ms` }}
+        >
+          <CardContent className="p-5 relative">
+            {/* Subtle hover wash */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+            <div className="flex items-start justify-between gap-4 relative">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium font-mono-accent">
+                  {stat.title}
+                </p>
+                <p className="kpi-number text-4xl mt-3 text-foreground">
+                  {stat.value}
+                </p>
                 {stat.subtitle && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{stat.subtitle}</p>
+                  <p className="text-xs text-muted-foreground mt-2 font-mono-accent">
+                    {stat.subtitle}
+                  </p>
                 )}
               </div>
-              <div className={`p-2 rounded-lg ${stat.color}`}>
+              <div className={`p-2.5 rounded-xl ${stat.color} shrink-0 shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.4)] ring-1 ring-white/10`}>
                 <stat.icon className="w-5 h-5" />
               </div>
             </div>
