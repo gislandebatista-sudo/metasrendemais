@@ -327,13 +327,16 @@ const Index = () => {
                     canEdit={canEdit}
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center bg-card rounded-xl border border-dashed border-border p-8 text-center min-h-[400px]">
-                    <div>
-                      <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-                      <p className="text-muted-foreground mb-2">
+                  <div className="h-full flex items-center justify-center bg-card/40 backdrop-blur-sm rounded-xl border border-dashed border-border/60 p-12 text-center min-h-[400px] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
+                    <div className="relative">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <Users className="w-6 h-6 text-primary" />
+                      </div>
+                      <p className="text-foreground font-medium mb-1.5">
                         Selecione um colaborador na lista
                       </p>
-                      <p className="text-sm text-muted-foreground/70">
+                      <p className="text-sm text-muted-foreground">
                         para visualizar detalhes e editar metas
                       </p>
                     </div>
