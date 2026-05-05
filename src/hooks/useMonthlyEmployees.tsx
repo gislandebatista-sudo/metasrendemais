@@ -37,8 +37,10 @@ export function useMonthlyEmployees(selectedMonth: string) {
           ? supabase.from('employees').select('*').order('name')
           : supabase.from('employees_secure' as any).select('*').order('name'),
         supabase.from('goals').select('id, employee_id, goal_type, name, description, weight, deadline'),
-        supabase.from('goal_monthly_progress').select('*').eq('month', activeMonth).eq('is_deleted', false),
-        supabase.from('employee_monthly_bonus').select('*').eq('month', activeMonth),
+        supabase.from('goal_monthly_progress')
+          .select('id, goal_id, achieved, delivery_date, observations, goal_name, goal_description, goal_weight, goal_deadline, goal_type')
+          .eq('month', activeMonth).eq('is_deleted', false),
+        supabase.from('employee_monthly_bonus').select('employee_id, performance_bonus, bonus_description').eq('month', activeMonth),
       ]);
 
       if (employeesRes.error) throw employeesRes.error;
