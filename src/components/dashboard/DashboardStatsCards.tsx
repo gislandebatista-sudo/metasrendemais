@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState , memo} from 'react';
 import { TrendingUp, Target, Award, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Employee, calculateTotalPerformance, getDelayedGoalsCount, getNotDeliveredGoalsCount, getGoalStatus } from '@/types/employee';
@@ -10,7 +10,7 @@ interface DashboardStatsCardsProps {
 
 type ModalType = 'above100' | 'delayed' | 'notDelivered' | null;
 
-export function DashboardStatsCards({ employees }: DashboardStatsCardsProps) {
+function DashboardStatsCardsBase({ employees }: DashboardStatsCardsProps) {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   
   const activeEmployees = employees.filter(emp => emp.status === 'active');
@@ -127,3 +127,5 @@ export function DashboardStatsCards({ employees }: DashboardStatsCardsProps) {
     </>
   );
 }
+
+export const DashboardStatsCards = memo(DashboardStatsCardsBase);

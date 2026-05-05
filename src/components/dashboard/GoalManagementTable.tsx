@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo , memo} from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Employee } from '@/types/employee';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ interface EditingState {
   editDeadline: string;
 }
 
-export function GoalManagementTable({ employees, selectedMonth, onRefresh }: GoalManagementTableProps) {
+function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalManagementTableProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newWeight, setNewWeight] = useState('');
@@ -440,3 +440,5 @@ export function GoalManagementTable({ employees, selectedMonth, onRefresh }: Goa
     </Card>
   );
 }
+
+export const GoalManagementTable = memo(GoalManagementTableBase);

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Users, TrendingUp, Award, UserCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Employee, calculateTotalPerformance } from '@/types/employee';
@@ -8,7 +9,7 @@ interface MainStatsCardsProps {
   employees: Employee[];
 }
 
-export function MainStatsCards({ employees }: MainStatsCardsProps) {
+function MainStatsCardsBase({ employees }: MainStatsCardsProps) {
   const { hidePercentages } = usePercentageVisibility();
   const activeEmployees = employees.filter(emp => emp.status === 'active');
   const performances = activeEmployees.map(emp => calculateTotalPerformance(emp));
@@ -80,3 +81,5 @@ export function MainStatsCards({ employees }: MainStatsCardsProps) {
     </div>
   );
 }
+
+export const MainStatsCards = memo(MainStatsCardsBase);

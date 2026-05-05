@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, PieChartIcon, BarChart3, Activity, Building2 } from 'lucide-react';
@@ -16,7 +17,7 @@ const COLORS = {
   excellent: 'hsl(142, 76%, 36%)',
 };
 
-export function PerformanceCharts({ employees }: PerformanceChartsProps) {
+function PerformanceChartsBase({ employees }: PerformanceChartsProps) {
   const activeEmployees = employees.filter(emp => emp.status === 'active');
   
   // Calculate data for charts
@@ -280,3 +281,5 @@ export function PerformanceCharts({ employees }: PerformanceChartsProps) {
     </div>
   );
 }
+
+export const PerformanceCharts = memo(PerformanceChartsBase);
