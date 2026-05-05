@@ -12,7 +12,7 @@ import { ExportTab } from '@/components/dashboard/ExportTab';
 import { EmployeesList } from '@/components/dashboard/EmployeesList';
 import { useMonthlyEmployees } from '@/hooks/useMonthlyEmployees';
 import { useEvaluationMonths } from '@/hooks/useEvaluationMonths';
-import { useSectors } from '@/hooks/useSectors';
+
 import { useAuth } from '@/hooks/useAuth';
 import { usePercentageVisibility } from '@/hooks/usePercentageVisibility';
 import { Employee, Goal, getGoalStatus } from '@/types/employee';
@@ -32,7 +32,7 @@ const Index = () => {
   // Use the new monthly employees hook
   const { employees, isLoading, activeMonth, fetchEmployees, saveEmployee, deleteEmployee, updateGoal, updateBonus } = useMonthlyEmployees(selectedMonth);
   const { isMonthEditable, isMonthPublished, publishMonth, unpublishMonth, evaluationMonths } = useEvaluationMonths();
-  const { sectors } = useSectors();
+  const sectors = useMemo(() => Array.from(new Set(employees.map(e => e.sector).filter(Boolean))).sort(), [employees]);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
