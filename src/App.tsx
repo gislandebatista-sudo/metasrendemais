@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { PercentageVisibilityProvider } from "@/hooks/usePercentageVisibility";
+import { EvaluationMonthsProvider } from "@/hooks/useEvaluationMonths";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -20,6 +21,7 @@ const App = () => (
     <ThemeProvider>
       <TooltipProvider>
         <AuthProvider>
+          <EvaluationMonthsProvider>
           <PercentageVisibilityProvider>
           <Toaster />
           <Sonner />
@@ -48,6 +50,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
           </PercentageVisibilityProvider>
+          </EvaluationMonthsProvider>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

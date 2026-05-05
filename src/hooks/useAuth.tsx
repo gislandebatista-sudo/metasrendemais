@@ -46,28 +46,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialized = false;
+    let lastUserId: string | null = null;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-          }, 0);
-        } else {
-          setUserRole(null);
+
+        const newUserId = session?.user?.id ?? null;
+        // Only refetch role if user actually changed (avoid duplicate role fetches)
+        if (newUserId !== lastUserId) {
+          lastUserId = newUserId;
+          if (newUserId) {
+            setTimeout(() => fetchUserRole(newUserId), 0);
+          } else {
+            setUserRole(null);
+          }
         }
-        setIsLoading(false);
+        if (initialized) setIsLoading(false);
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      initialized = true;
       setSession(session);
       setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserRole(session.user.id);
+      const uid = session?.user?.id ?? null;
+      if (uid && uid !== lastUserId) {
+        lastUserId = uid;
+        fetchUserRole(uid);
       }
       setIsLoading(false);
     });

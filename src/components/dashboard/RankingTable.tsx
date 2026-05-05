@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Trophy, Medal, Crown, ChevronRight, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,7 +13,7 @@ interface RankingTableProps {
   selectedGoalName?: string;
 }
 
-export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: RankingTableProps) {
+function RankingTableBase({ employees, onSelectEmployee, selectedGoalName }: RankingTableProps) {
   const { hidePercentages } = usePercentageVisibility();
   const isGoalFiltered = selectedGoalName && selectedGoalName !== 'all';
 
@@ -148,3 +149,5 @@ export function RankingTable({ employees, onSelectEmployee, selectedGoalName }: 
     </Card>
   );
 }
+
+export const RankingTable = memo(RankingTableBase);

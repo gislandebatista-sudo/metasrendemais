@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -13,7 +13,23 @@ interface EvaluationMonth {
   isPublished: boolean;
 }
 
-export function useEvaluationMonths() {
+interface EvaluationMonthsContextValue {
+  evaluationMonths: EvaluationMonth[];
+  currentMonth: string;
+  setCurrentMonth: (m: string) => void;
+  isLoading: boolean;
+  initializeMonth: (month: string) => Promise<boolean>;
+  closeMonth: (month: string) => Promise<boolean>;
+  isMonthEditable: (month: string) => boolean;
+  isMonthPublished: (month: string) => boolean;
+  publishMonth: (month: string) => Promise<boolean>;
+  unpublishMonth: (month: string) => Promise<boolean>;
+  fetchEvaluationMonths: () => Promise<void>;
+}
+
+const EvaluationMonthsContext = createContext<EvaluationMonthsContextValue | undefined>(undefined);
+
+function useEvaluationMonthsState(): EvaluationMonthsContextValue {
   const [evaluationMonths, setEvaluationMonths] = useState<EvaluationMonth[]>([]);
   const [currentMonth, setCurrentMonth] = useState<string>(() => 
     format(new Date(), 'yyyy-MM')
@@ -154,19 +170,22 @@ export function useEvaluationMonths() {
     }
   }, [isAdmin, fetchEvaluationMonths]);
 
-  // Auto-initialize current month if it doesn't exist
+  // Auto-initialize current month if it doesn't exist (guarded by ref to avoid loops)
+  const triedInitRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (user && !isLoading && isAdmin) {
-      const monthExists = evaluationMonths.some(m => m.month === currentMonth);
-      if (!monthExists && evaluationMonths.length > 0) {
-        // Only auto-initialize if there are already some months (not first setup)
-        initializeMonth(currentMonth);
-      }
+    if (!user || isLoading || !isAdmin) return;
+    if (triedInitRef.current.has(currentMonth)) return;
+    const monthExists = evaluationMonths.some(m => m.month === currentMonth);
+    if (!monthExists && evaluationMonths.length > 0) {
+      triedInitRef.current.add(currentMonth);
+      initializeMonth(currentMonth);
     }
   }, [user, isLoading, currentMonth, evaluationMonths, isAdmin, initializeMonth]);
 
+  const fetchedForUserRef = useRef<string | null>(null);
   useEffect(() => {
-    if (user) {
+    if (user && fetchedForUserRef.current !== user.id) {
+      fetchedForUserRef.current = user.id;
       fetchEvaluationMonths();
     }
   }, [user, fetchEvaluationMonths]);
@@ -184,6 +203,21 @@ export function useEvaluationMonths() {
     unpublishMonth,
     fetchEvaluationMonths,
   };
+}
+
+export function EvaluationMonthsProvider({ children }: { children: ReactNode }) {
+  const value = useEvaluationMonthsState();
+  return (
+    <EvaluationMonthsContext.Provider value={value}>
+      {children}
+    </EvaluationMonthsContext.Provider>
+  );
+}
+
+export function useEvaluationMonths(): EvaluationMonthsContextValue {
+  const ctx = useContext(EvaluationMonthsContext);
+  if (!ctx) throw new Error('useEvaluationMonths must be used within EvaluationMonthsProvider');
+  return ctx;
 }
 
 // Helper function to format month label
