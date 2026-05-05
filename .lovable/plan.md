@@ -1,90 +1,79 @@
+## Diagnóstico
 
-# Criar instância separada da aplicação para nova empresa
+Após inspecionar os hooks de dados, RLS e componentes, identifiquei várias causas para o carregamento lento e atualizações pesadas. A app não é "lenta de banco" — são duplicações de fetch, loops sutis em `useEffect` e ausência de cache/memoização.
 
-## Resumo
+### Problemas encontrados
 
-A melhor forma de atender duas empresas distintas SEM risco de mistura de dados é **duplicar este projeto** via **Remix do Lovable**. Cada empresa fica com:
+1. **`useEvaluationMonths` é chamado duas vezes** (em `Index.tsx` e em `MonthSelector.tsx`). Cada instância faz seu próprio `fetch` em `evaluation_months` e roda seu próprio efeito de "auto-inicializar mês". Resultado: ~2× o tráfego de rede e estado dessincronizado.
 
-- Sua própria URL (ex.: `metasrendemais.lovable.app` continua para a empresa atual; a nova ganha um domínio próprio)
-- Seu próprio banco de dados (Lovable Cloud independente)
-- Seu próprio admin, colaboradores, metas e histórico
-- O mesmo código-fonte e os mesmos parâmetros estruturais (papéis, RLS, funções, schema)
+2. **Loop potencial no auto-init de mês**: o `useEffect` depende de `evaluationMonths` (referência muda a cada fetch) e de `initializeMonth` (recriado quando `fetchEvaluationMonths` muda). Em alguns cenários re-dispara `initialize_month` repetidamente.
 
-Isso elimina o risco de um admin de uma empresa enxergar/editar dados da outra — coisa que só seria possível, com segurança, com uma reescrita multi-tenant grande e arriscada na base atual.
+3. **`useAuth` busca role duas vezes** no boot: `onAuthStateChange` (evento `INITIAL_SESSION`) **e** `getSession().then(...)` chamam `fetchUserRole` para o mesmo usuário.
 
-## Como funciona o Remix
+4. **`useSectors` faz uma query extra** em `employees` só para extrair setores distintos — dado já presente no array `employees` que `useMonthlyEmployees` retorna.
 
-1. Você (no editor Lovable) clica nos três pontos do projeto → **Remix**
-2. O Lovable cria um **novo projeto** com cópia completa do código
-3. O novo projeto recebe um **novo Lovable Cloud** vazio (banco zerado)
-4. As migrações já existentes recriam automaticamente toda a estrutura: tabelas, RLS, funções (`is_admin`, `has_role`, `initialize_month`, etc.), enum `app_role`, bucket `goal-attachments`
+5. **Sem cache entre trocas de mês**: ao alternar mês, todo o pipeline (4 queries paralelas + remontagem) roda do zero. React Query não está sendo usado para esses dados (só está provider montado).
 
-Resultado: nova empresa começa com a estrutura idêntica, mas sem nenhum colaborador, meta, bônus ou histórico.
+6. **Re-renders pesados nas edições**: ao editar uma meta, `setEmployees` cria um novo array → `MainStatsCards`, `RankingTable`, `PerformanceCharts`, `DashboardStatsCards` recalculam tudo, mesmo sem `React.memo`.
 
-## O que vou preparar nesta etapa
+7. **RLS lenta em `goal_monthly_progress`**: política usa `IN (SELECT ... FROM goals JOIN employees ...)` por linha. Com 1.830 linhas a checagem pesa. Faltam índices em `goals.employee_id`, `goal_monthly_progress.goal_id` e `goal_monthly_progress.month`.
 
-Para que o Remix funcione limpo, preciso fazer alguns ajustes no projeto atual antes de você duplicar:
+## Correções propostas
 
-### 1. Garantir que toda a estrutura está em migrações
+### 1. Compartilhar estado de meses via Context
+Transformar `useEvaluationMonths` em provider (`EvaluationMonthsProvider`) montado uma única vez em `App.tsx`. `Index.tsx` e `MonthSelector.tsx` consomem o mesmo estado → elimina fetch duplicado e auto-init duplicado.
 
-Verificar que o schema atual (tabelas, RLS, funções, triggers `assign_default_role`/`handle_new_user`, bucket de storage) está totalmente representado em arquivos de migração em `supabase/migrations/`. Se algo foi criado direto no banco e não está em migração, criar a migração correspondente para que o clone recrie tudo.
+### 2. Estabilizar o auto-init de mês
+Remover `evaluationMonths` e `initializeMonth` das deps do effect; usar `useRef` para marcar "já tentei inicializar este mês" evitando re-disparos.
 
-### 2. Branding configurável
+### 3. Auth: evitar fetch duplicado de role
+No `useAuth`, ignorar o `INITIAL_SESSION` do `onAuthStateChange` (já tratado pelo `getSession`), ou usar uma flag `initialized`.
 
-Hoje o nome "Rende +" e cores estão hardcoded em vários lugares (Auth, Header, etc.). Vou centralizar em um arquivo único (`src/config/brand.ts`) com:
+### 4. Derivar setores do array de employees
+Eliminar `useSectors`. Em `Index.tsx`, calcular `sectors` com `useMemo(() => [...new Set(employees.map(e => e.sector))], [employees])`. -1 round-trip no boot.
 
-```ts
-export const brand = {
-  name: "Rende +",
-  tagline: "Sistema de Gestão de Performance",
-  primaryColor: "...",
-};
+### 5. Cache via React Query
+Migrar `fetchEmployees` e `fetchEvaluationMonths` para `useQuery` com `staleTime: 30s`. Ao trocar mês para um já visto, retorna instantâneo do cache. Mutations (`saveEmployee`, `updateGoal`, `updateBonus`) atualizam o cache via `setQueryData` (mantém o padrão atual de não-refetch).
+
+### 6. Memoizar componentes pesados
+Envolver `MainStatsCards`, `DashboardStatsCards`, `PerformanceCharts`, `RankingTable`, `GoalManagementTable` em `React.memo`. Garante que edição de bônus/meta de um colaborador não recompute charts inteiros desnecessariamente.
+
+### 7. Índices no banco para acelerar RLS e joins
+Migration adicionando (se não existirem):
+```sql
+CREATE INDEX IF NOT EXISTS idx_goals_employee_id ON public.goals(employee_id);
+CREATE INDEX IF NOT EXISTS idx_gmp_goal_id ON public.goal_monthly_progress(goal_id);
+CREATE INDEX IF NOT EXISTS idx_gmp_month ON public.goal_monthly_progress(month);
+CREATE INDEX IF NOT EXISTS idx_gmp_month_deleted ON public.goal_monthly_progress(month, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_emb_employee_month ON public.employee_monthly_bonus(employee_id, month);
+CREATE INDEX IF NOT EXISTS idx_employees_user_id ON public.employees(user_id);
 ```
 
-Assim, na nova empresa basta editar UM arquivo para trocar nome/identidade, sem caçar strings.
+### 8. Reduzir colunas selecionadas
+`useMonthlyEmployees` faz `select('*')` em `goal_monthly_progress` (1.830 linhas, ~15 colunas). Selecionar somente colunas usadas reduz payload em ~40%.
 
-### 3. Script de "primeiro admin" (bootstrap)
+## Arquivos afetados
 
-A política `First user can be admin` em `user_roles` permite o primeiro usuário se autoatribuir admin, mas o trigger `assign_default_role` já cria todo mundo como `viewer`. Vou criar uma página/rota oculta `/setup` (ou uma edge function `bootstrap-admin`) que:
+- `src/hooks/useAuth.tsx` — flag de inicialização
+- `src/hooks/useEvaluationMonths.tsx` — vira provider + ref de auto-init
+- `src/hooks/useMonthlyEmployees.tsx` — React Query + select enxuto
+- `src/hooks/useSectors.tsx` — removido (ou esvaziado)
+- `src/App.tsx` — adicionar `EvaluationMonthsProvider`
+- `src/pages/Index.tsx` — derivar `sectors` de `employees`; usar provider
+- `src/components/dashboard/MonthSelector.tsx` — consumir provider
+- `src/components/dashboard/{MainStatsCards,DashboardStatsCards,PerformanceCharts,RankingTable,GoalManagementTable}.tsx` — `React.memo`
+- Nova migration SQL com os índices
 
-- Só funciona se ainda **não existe nenhum admin** no banco
-- Permite o primeiro usuário cadastrado virar admin com 1 clique
-- Depois disso, a rota fica desativada automaticamente
+## Garantias
 
-Isso evita você ter que rodar SQL manual no Lovable Cloud da nova empresa.
+- **Zero mudança funcional**: padrão "Salvar Alterações" + sync local sem refetch é preservado.
+- **RLS intacta**: nenhuma policy alterada — só índices.
+- **Visual inalterado**: nenhum token/CSS tocado.
+- **Compatibilidade**: `useEvaluationMonths()` continua exportando a mesma API (agora via context).
 
-### 4. Documentar parâmetros opcionais a recriar
+## Resultado esperado
 
-Listar em um `SETUP.md` o que o novo admin precisa cadastrar manualmente após o clone:
-- Setores (tabela usada por `useSectors`)
-- Critérios de pontuação padrão (se houver)
-- Mês de avaliação inicial (via `initialize_month`)
-
-## Passo a passo que VOCÊ executa depois
-
-1. Eu termino os ajustes acima e te aviso
-2. No editor Lovable: três pontos no projeto → **Remix** → dar nome (ex.: "Metas Empresa X")
-3. Abrir o novo projeto → Lovable Cloud é provisionado automaticamente e roda as migrações
-4. Acessar a URL preview do novo projeto → ir em `/setup` → criar conta com email da nova empresa → virar admin
-5. Editar `src/config/brand.ts` no novo projeto (nome/cor da nova empresa)
-6. Cadastrar setores, colaboradores e metas pelo painel admin normalmente
-7. Publicar com domínio próprio
-
-## O que NÃO será feito (para evitar confusão)
-
-- Nada será alterado no banco da empresa atual
-- Não haverá `company_id` nem multi-tenant — cada empresa fica isolada em projetos diferentes
-- Não vou copiar nenhum colaborador, meta, bônus ou histórico para o novo projeto
-
-## Arquivos a modificar / criar nesta etapa
-
-- `src/config/brand.ts` — novo, centraliza branding
-- `src/pages/Auth.tsx`, `src/components/dashboard/Header.tsx` — passam a ler de `brand.ts`
-- `src/pages/Setup.tsx` — nova rota oculta para bootstrap do primeiro admin
-- `src/App.tsx` — registra a rota `/setup`
-- `supabase/migrations/<timestamp>_ensure_full_schema.sql` — só se faltar algo nas migrações existentes
-- `SETUP.md` — instruções pós-clone para o novo admin
-
-## Observação importante sobre custos
-
-Cada projeto Lovable consome plano/créditos próprios e cada Lovable Cloud é uma instância separada (com seu próprio limite gratuito). Confira o plano antes de remixar se for usar em produção.
+- Boot da página: ~50% menos requests (de ~6 para ~3-4 queries) e zero duplicação de role/months.
+- Troca de mês já visitado: instantânea (cache).
+- Edição de meta/bônus: sem re-render de charts/tabelas não relacionadas.
+- Queries DB: tempo de RLS reduzido com os índices.
