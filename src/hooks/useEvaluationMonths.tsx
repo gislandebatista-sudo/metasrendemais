@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -13,7 +13,23 @@ interface EvaluationMonth {
   isPublished: boolean;
 }
 
-export function useEvaluationMonths() {
+interface EvaluationMonthsContextValue {
+  evaluationMonths: EvaluationMonth[];
+  currentMonth: string;
+  setCurrentMonth: (m: string) => void;
+  isLoading: boolean;
+  initializeMonth: (month: string) => Promise<boolean>;
+  closeMonth: (month: string) => Promise<boolean>;
+  isMonthEditable: (month: string) => boolean;
+  isMonthPublished: (month: string) => boolean;
+  publishMonth: (month: string) => Promise<boolean>;
+  unpublishMonth: (month: string) => Promise<boolean>;
+  fetchEvaluationMonths: () => Promise<void>;
+}
+
+const EvaluationMonthsContext = createContext<EvaluationMonthsContextValue | undefined>(undefined);
+
+function useEvaluationMonthsState(): EvaluationMonthsContextValue {
   const [evaluationMonths, setEvaluationMonths] = useState<EvaluationMonth[]>([]);
   const [currentMonth, setCurrentMonth] = useState<string>(() => 
     format(new Date(), 'yyyy-MM')
