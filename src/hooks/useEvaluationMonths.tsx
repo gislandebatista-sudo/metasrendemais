@@ -170,19 +170,22 @@ function useEvaluationMonthsState(): EvaluationMonthsContextValue {
     }
   }, [isAdmin, fetchEvaluationMonths]);
 
-  // Auto-initialize current month if it doesn't exist
+  // Auto-initialize current month if it doesn't exist (guarded by ref to avoid loops)
+  const triedInitRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (user && !isLoading && isAdmin) {
-      const monthExists = evaluationMonths.some(m => m.month === currentMonth);
-      if (!monthExists && evaluationMonths.length > 0) {
-        // Only auto-initialize if there are already some months (not first setup)
-        initializeMonth(currentMonth);
-      }
+    if (!user || isLoading || !isAdmin) return;
+    if (triedInitRef.current.has(currentMonth)) return;
+    const monthExists = evaluationMonths.some(m => m.month === currentMonth);
+    if (!monthExists && evaluationMonths.length > 0) {
+      triedInitRef.current.add(currentMonth);
+      initializeMonth(currentMonth);
     }
   }, [user, isLoading, currentMonth, evaluationMonths, isAdmin, initializeMonth]);
 
+  const fetchedForUserRef = useRef<string | null>(null);
   useEffect(() => {
-    if (user) {
+    if (user && fetchedForUserRef.current !== user.id) {
+      fetchedForUserRef.current = user.id;
       fetchEvaluationMonths();
     }
   }, [user, fetchEvaluationMonths]);
@@ -200,6 +203,21 @@ function useEvaluationMonthsState(): EvaluationMonthsContextValue {
     unpublishMonth,
     fetchEvaluationMonths,
   };
+}
+
+export function EvaluationMonthsProvider({ children }: { children: ReactNode }) {
+  const value = useEvaluationMonthsState();
+  return (
+    <EvaluationMonthsContext.Provider value={value}>
+      {children}
+    </EvaluationMonthsContext.Provider>
+  );
+}
+
+export function useEvaluationMonths(): EvaluationMonthsContextValue {
+  const ctx = useContext(EvaluationMonthsContext);
+  if (!ctx) throw new Error('useEvaluationMonths must be used within EvaluationMonthsProvider');
+  return ctx;
 }
 
 // Helper function to format month label
