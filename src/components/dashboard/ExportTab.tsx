@@ -39,13 +39,23 @@ const MONTHS = [
   { value: '12', label: 'Dezembro' },
 ];
 
+type StatusFilter = 'all' | 'active' | 'inactive';
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: 'Todos',
+  active: 'Apenas Ativos',
+  inactive: 'Apenas Inativos',
+};
+
 export function ExportTab({ employees }: ExportTabProps) {
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
 
   const filteredEmployees = employees.filter(emp => {
-    if (selectedMonth === 'all') return true;
-    return emp.referenceMonth.endsWith(`-${selectedMonth}`);
+    if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
+    if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
+    return true;
   });
 
   const getMonthLabel = (month: string) => {
@@ -152,7 +162,7 @@ export function ExportTab({ employees }: ExportTabProps) {
       
       doc.setFontSize(12);
       doc.setTextColor(100);
-      doc.text(`Período: ${getMonthLabel(selectedMonth)}`, pageWidth / 2, 30, { align: 'center' });
+      doc.text(`Período: ${getMonthLabel(selectedMonth)} | Status: ${STATUS_LABELS[selectedStatus]}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, 37, { align: 'center' });
 
       let yPos = 50;
@@ -195,9 +205,11 @@ export function ExportTab({ employees }: ExportTabProps) {
           yPos = 20;
         }
         
-        const rankBadge = index < 3 ? '🏆' : index < 10 ? '⭐' : '';
-        doc.setTextColor(index < 3 ? 249 : 60, index < 3 ? 115 : 60, index < 3 ? 22 : 60);
-        doc.text(`${index + 1}º ${rankBadge} ${emp.name} - ${emp.sector}`, 15, yPos);
+        const rankBadge = index < 3 ? '[TOP 3] ' : index < 10 ? '[TOP 10] ' : '';
+        if (index < 3) doc.setTextColor(249, 115, 22);
+        else if (index < 10) doc.setTextColor(120, 120, 120);
+        else doc.setTextColor(60, 60, 60);
+        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector}`, 15, yPos);
         doc.setTextColor(60);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 30, yPos);
         yPos += 5;
@@ -304,7 +316,7 @@ export function ExportTab({ employees }: ExportTabProps) {
         yPos += 30;
       });
 
-      doc.save(`rende-mais-relatorio-completo-${selectedMonth === 'all' ? 'todos' : selectedMonth}.pdf`);
+      doc.save(`rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -413,7 +425,7 @@ export function ExportTab({ employees }: ExportTabProps) {
       XLSX.utils.book_append_sheet(wb, wsDetailed, 'Dados Detalhados');
 
       // Export
-      XLSX.writeFile(wb, `rende-mais-relatorio-completo-${selectedMonth === 'all' ? 'todos' : selectedMonth}.xlsx`);
+      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting Excel:', error);
@@ -439,24 +451,39 @@ export function ExportTab({ employees }: ExportTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Month Selection */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Mês de Referência
-            </Label>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-full max-w-xs">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Mês de Referência
+              </Label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status do Colaborador</Label>
+              <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as StatusFilter)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Apenas Ativos</SelectItem>
+                  <SelectItem value="inactive">Apenas Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Stats Preview */}
