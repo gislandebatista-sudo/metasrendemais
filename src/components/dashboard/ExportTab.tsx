@@ -205,9 +205,11 @@ export function ExportTab({ employees }: ExportTabProps) {
           yPos = 20;
         }
         
-        const rankBadge = index < 3 ? '🏆' : index < 10 ? '⭐' : '';
-        doc.setTextColor(index < 3 ? 249 : 60, index < 3 ? 115 : 60, index < 3 ? 22 : 60);
-        doc.text(`${index + 1}º ${rankBadge} ${emp.name} - ${emp.sector}`, 15, yPos);
+        const rankBadge = index < 3 ? '[TOP 3] ' : index < 10 ? '[TOP 10] ' : '';
+        if (index < 3) doc.setTextColor(249, 115, 22);
+        else if (index < 10) doc.setTextColor(120, 120, 120);
+        else doc.setTextColor(60, 60, 60);
+        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector}`, 15, yPos);
         doc.setTextColor(60);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 30, yPos);
         yPos += 5;
