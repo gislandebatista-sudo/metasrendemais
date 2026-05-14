@@ -39,13 +39,23 @@ const MONTHS = [
   { value: '12', label: 'Dezembro' },
 ];
 
+type StatusFilter = 'all' | 'active' | 'inactive';
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: 'Todos',
+  active: 'Apenas Ativos',
+  inactive: 'Apenas Inativos',
+};
+
 export function ExportTab({ employees }: ExportTabProps) {
   const [selectedMonth, setSelectedMonth] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
 
   const filteredEmployees = employees.filter(emp => {
-    if (selectedMonth === 'all') return true;
-    return emp.referenceMonth.endsWith(`-${selectedMonth}`);
+    if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
+    if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
+    return true;
   });
 
   const getMonthLabel = (month: string) => {
