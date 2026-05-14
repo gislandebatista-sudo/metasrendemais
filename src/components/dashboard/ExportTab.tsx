@@ -451,24 +451,39 @@ export function ExportTab({ employees }: ExportTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Month Selection */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Mês de Referência
-            </Label>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-full max-w-xs">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters */}
+          <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Mês de Referência
+              </Label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status do Colaborador</Label>
+              <Select value={selectedStatus} onValueChange={(v) => setSelectedStatus(v as StatusFilter)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="active">Apenas Ativos</SelectItem>
+                  <SelectItem value="inactive">Apenas Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Stats Preview */}
