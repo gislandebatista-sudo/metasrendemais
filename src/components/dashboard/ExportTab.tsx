@@ -425,7 +425,7 @@ export function ExportTab({ employees }: ExportTabProps) {
       XLSX.utils.book_append_sheet(wb, wsDetailed, 'Dados Detalhados');
 
       // Export
-      XLSX.writeFile(wb, `rende-mais-relatorio-completo-${selectedMonth === 'all' ? 'todos' : selectedMonth}.xlsx`);
+      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting Excel:', error);
