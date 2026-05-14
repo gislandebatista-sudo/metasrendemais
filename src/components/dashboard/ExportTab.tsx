@@ -316,7 +316,7 @@ export function ExportTab({ employees }: ExportTabProps) {
         yPos += 30;
       });
 
-      doc.save(`rende-mais-relatorio-completo-${selectedMonth === 'all' ? 'todos' : selectedMonth}.pdf`);
+      doc.save(`rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
