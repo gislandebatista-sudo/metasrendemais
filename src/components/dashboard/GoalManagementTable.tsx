@@ -277,7 +277,7 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
               <TableHead className="w-20">Peso</TableHead>
               <TableHead className="w-32">Prazo</TableHead>
               <TableHead className="w-28">Associados</TableHead>
-              <TableHead className="w-48 text-right">Ações</TableHead>
+              <TableHead className="w-72 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
