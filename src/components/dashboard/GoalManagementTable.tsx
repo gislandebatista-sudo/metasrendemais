@@ -37,6 +37,7 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
   const [newDeadline, setNewDeadline] = useState('');
   const [editingGoal, setEditingGoal] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [compositionGoal, setCompositionGoal] = useState<string | null>(null);
 
   // Extract unique macro goals from all employees
   const uniqueMacroGoals = useMemo(() => {
