@@ -449,6 +449,15 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
           </TableBody>
         </Table>
       </CardContent>
+      {compositionGoal && (
+        <MacroGoalCompositionModal
+          open={!!compositionGoal}
+          onOpenChange={(o) => !o && setCompositionGoal(null)}
+          goalName={compositionGoal}
+          selectedMonth={selectedMonth}
+          onSaved={onRefresh}
+        />
+      )}
     </Card>
   );
 }
