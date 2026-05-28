@@ -409,6 +409,16 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
                         <Button
                           size="sm"
                           variant="outline"
+                          title="Definir composição"
+                          onClick={() => setCompositionGoal(goal.name)}
+                          disabled={!!loading}
+                        >
+                          <ListChecks className="w-4 h-4 mr-1" />
+                          Composição
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           title="Associar a todos"
                           onClick={() => handleAssociateToAll(goal.name, goal.weight, goal.deadline)}
                           disabled={!!loading || goal.count === activeEmployees.length}
