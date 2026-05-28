@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Target, Plus, Pencil, Trash2, Users, Check, X, Loader2 } from 'lucide-react';
+import { Target, Plus, Pencil, Trash2, Users, Check, X, Loader2, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
+import { MacroGoalCompositionModal } from './MacroGoalCompositionModal';
 
 interface GoalManagementTableProps {
   employees: Employee[];
@@ -36,6 +37,7 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
   const [newDeadline, setNewDeadline] = useState('');
   const [editingGoal, setEditingGoal] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [compositionGoal, setCompositionGoal] = useState<string | null>(null);
 
   // Extract unique macro goals from all employees
   const uniqueMacroGoals = useMemo(() => {
@@ -275,7 +277,7 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
               <TableHead className="w-20">Peso</TableHead>
               <TableHead className="w-32">Prazo</TableHead>
               <TableHead className="w-28">Associados</TableHead>
-              <TableHead className="w-48 text-right">Ações</TableHead>
+              <TableHead className="w-72 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -407,6 +409,16 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
                         <Button
                           size="sm"
                           variant="outline"
+                          title="Definir composição"
+                          onClick={() => setCompositionGoal(goal.name)}
+                          disabled={!!loading}
+                        >
+                          <ListChecks className="w-4 h-4 mr-1" />
+                          Composição
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           title="Associar a todos"
                           onClick={() => handleAssociateToAll(goal.name, goal.weight, goal.deadline)}
                           disabled={!!loading || goal.count === activeEmployees.length}
@@ -437,6 +449,15 @@ function GoalManagementTableBase({ employees, selectedMonth, onRefresh }: GoalMa
           </TableBody>
         </Table>
       </CardContent>
+      {compositionGoal && (
+        <MacroGoalCompositionModal
+          open={!!compositionGoal}
+          onOpenChange={(o) => !o && setCompositionGoal(null)}
+          goalName={compositionGoal}
+          selectedMonth={selectedMonth}
+          onSaved={onRefresh}
+        />
+      )}
     </Card>
   );
 }
