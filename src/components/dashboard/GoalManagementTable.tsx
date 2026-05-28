@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Target, Plus, Pencil, Trash2, Users, Check, X, Loader2 } from 'lucide-react';
+import { Target, Plus, Pencil, Trash2, Users, Check, X, Loader2, ListChecks } from 'lucide-react';
 import { toast } from 'sonner';
+import { MacroGoalCompositionModal } from './MacroGoalCompositionModal';
 
 interface GoalManagementTableProps {
   employees: Employee[];
