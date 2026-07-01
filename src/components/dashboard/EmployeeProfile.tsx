@@ -56,6 +56,24 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
   }>({ open: false, goal: null });
   const [editingGoalName, setEditingGoalName] = useState<string | null>(null);
   const [goalNameValue, setGoalNameValue] = useState('');
+  const [editingDeadline, setEditingDeadline] = useState<string | null>(null);
+  const [deadlineValue, setDeadlineValue] = useState('');
+
+  const handleSaveDeadline = async (goalId: string, goalType: 'macro' | 'sectoral', oldDeadline: string) => {
+    if (!deadlineValue || deadlineValue === oldDeadline) {
+      setEditingDeadline(null);
+      return;
+    }
+    const { error: e1 } = await supabase.from('goals').update({ deadline: deadlineValue }).eq('id', goalId);
+    const { error: e2 } = await supabase.from('goal_monthly_progress').update({ goal_deadline: deadlineValue }).eq('goal_id', goalId);
+    if (e1 || e2) {
+      toast.error('Erro ao atualizar prazo');
+      return;
+    }
+    onUpdateGoal(employee.id, goalType, goalId, { deadline: deadlineValue });
+    setEditingDeadline(null);
+    toast.success('Prazo atualizado');
+  };
 
   const handleSaveGoalName = async (goalId: string, goalType: 'macro' | 'sectoral', oldName: string) => {
     if (!goalNameValue.trim() || goalNameValue.trim() === oldName) {
