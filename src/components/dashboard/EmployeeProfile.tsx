@@ -234,9 +234,39 @@ export function EmployeeProfile({ employee, onClose, onUpdateGoal, onUpdateBonus
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Prazo:</span>
-                    <span className="ml-2 font-medium">{formatDateBR(goal.deadline)}</span>
+                    {editingDeadline === goal.id ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="date"
+                          value={deadlineValue}
+                          onChange={(e) => setDeadlineValue(e.target.value)}
+                          className="h-7 text-sm w-36"
+                          autoFocus
+                        />
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleSaveDeadline(goal.id, type, goal.deadline)}>
+                          <Save className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingDeadline(null)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-medium">{formatDateBR(goal.deadline)}</span>
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => { setEditingDeadline(goal.id); setDeadlineValue(goal.deadline); }}
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Entrega:</span>
