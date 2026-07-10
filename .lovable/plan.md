@@ -1,45 +1,75 @@
-## Diagnóstico
 
-**1. Caracteres estranhos no PDF (`Ø<ßÆ`, `+P`)**
-No `ExportTab.tsx` linha 198, o ranking usa emojis (`🏆` e `⭐`) dentro de `doc.text()`. A fonte padrão do jsPDF (Helvetica) **não suporta emojis Unicode** — por isso eles aparecem como caracteres latinos corrompidos (`Ø<ßÆ` = 🏆, `+P` = ⭐). O mesmo afeta acentos em alguns casos.
+# Painel Gerencial de Desempenho — Rende +
 
-**2. Falta filtro de status na exportação**
-Atualmente o `ExportTab.tsx` filtra apenas por mês. Não há filtro para escolher entre colaboradores Ativos, Inativos ou Todos.
+Reorganizar o atual `ExportTab` (Rende + | Relatório Completo de Desempenho) em um painel gerencial estruturado, mantendo todos os dados, filtros e opções de exportação existentes. Adicionar novos indicadores, gráficos, validações e um fluxo separado de relatório individual (um colaborador ou todos).
 
-## Mudanças propostas
+## Escopo do trabalho
 
-### A) Adicionar filtro de Status em `src/components/dashboard/ExportTab.tsx`
+### 1. Nova aba "Exportar" em modo painel (na tela)
+Reorganizar `src/components/dashboard/ExportTab.tsx` como um painel navegável, com as seções abaixo (em ordem), reutilizando componentes existentes onde possível:
 
-- Novo `useState` `selectedStatus` com valores: `all` | `active` | `inactive` (default `active`, já que normalmente queremos só os ativos no relatório).
-- Novo `<Select>` ao lado do seletor de mês com as opções: "Todos", "Apenas Ativos", "Apenas Inativos".
-- Atualizar `filteredEmployees` para também aplicar o filtro de status antes de gerar PDF/Excel.
-- Incluir o status escolhido no nome do arquivo exportado e no cabeçalho do PDF (ex.: "Período: Outubro | Status: Apenas Ativos").
+1. **Resumo executivo** — cartões com: total ativos, média, melhor, menor, contagens/percentuais por faixa (≥100 / 95–99,99 / 90–94,99 / <90), total de metas avaliadas, antecipadas, no prazo, atrasadas, não entregues, taxa geral de pontualidade.
+2. **Distribuição por faixa** — gráfico de rosca (`recharts`) + tabela lateral.
+3. **Ranking geral** — tabela ordenável (posição, nome, cargo, setor, desempenho total, macro, setorial, atrasadas, não entregues, %bônus, status geral). Filtros: período/mês, setor, colaborador, status colaborador, faixa de desempenho, status de metas. Destaques visuais para top 3, ≥100%, atrasadas, não entregues.
+4. **Indicadores de prazo** — cartões e mini-tabela por colaborador e por setor (taxa de pontualidade, atrasos recorrentes, %antecipadas/no prazo/atrasadas/não entregues, taxa de cumprimento).
+5. **Comparativo por setor** — tabela + gráfico de barras (média, melhor, menor, % macro/setorial, atrasos, não entregues, pontualidade, status geral do setor).
+6. **Evolução mensal / comparação histórica** — quando existirem 2+ meses no dataset atual: gráfico de linhas (média, pontualidade, atrasos, não entregues, por setor) e cartão de variação em pontos percentuais vs. mês anterior. Sem histórico: mensagem "Não há dados históricos suficientes para realizar a comparação."
+7. **Indicadores de consistência** — listas: mais aparições no Top 3, maior evolução, maior queda, atrasos recorrentes (≥2 períodos), média acumulada, melhor posição, posição média, meses consecutivos ≥100%.
+8. **Alertas e validações** — área classificada em Crítico / Atenção / Informativo com todas as regras listadas (peso=0, soma≠100, sem prazo, sem responsável, vencidas sem entrega, sem status, realizado>peso sem justificativa, >100% sem bônus/regra, bônus sem motivo, divergência data/status, ativos sem metas, duplicados).
 
-### B) Corrigir ranking do PDF
+### 2. Exportação PDF gerencial
+Reescrever o PDF atual usando `jspdf` + `jspdf-autotable` (adicionar dependência) para:
+- Cabeçalho fixo (nome do relatório, período, filtros aplicados, data/hora).
+- Uma seção por bloco acima, na mesma ordem.
+- Tabelas com cabeçalho repetido, larguras controladas para caber em A4 retrato, sem cortes laterais.
+- Gráficos renderizados na tela e capturados via `html2canvas` (nova dependência) para PDF em boa resolução.
+- Evitar quebra ruim entre seções relacionadas (`didDrawPage`, `rowPageBreak: 'avoid'`).
 
-Substituir os emojis por marcadores textuais compatíveis com a fonte do PDF:
-- 1º–3º lugar: prefixo `[TOP 3]`
-- 4º–10º lugar: prefixo `[TOP 10]`
-- demais: sem prefixo
+### 3. Relatório individual separado
+Novo botão "Relatório Individual" no `ExportTab`, com:
+- Seletor de colaborador (dropdown) ou opção "Todos" (gera 1 PDF por colaborador ou um PDF único com uma seção por colaborador — usar PDF único com quebra de página por colaborador, mantendo dados+tabela do mesmo colaborador juntos).
+- Conteúdo por colaborador conforme especificação: cabeçalho (posição, nome, cargo, setor, status colab., status geral, desempenho total, macro, setorial, %bônus, motivo, contagens de metas, taxa pontualidade, comparação com período anterior quando houver).
+- Tabela de metas: nome, tipo (macro/setorial), peso, %realizado, diferença peso×realizado, prazo, entrega, status, observação (resumida com "..." se >120 chars), evidência (link/nome do anexo se disponível).
+- Destaques visuais por status (cores + rótulo textual/ícone).
 
-Linha alvo (≈198–204): trocar
-```
-const rankBadge = index < 3 ? '🏆' : index < 10 ? '⭐' : '';
-doc.text(`${index + 1}º ${rankBadge} ${emp.name} - ${emp.sector}`, 15, yPos);
-```
-por uma versão sem emojis e usando cores já existentes (laranja para top 3, cinza para os demais) para manter o destaque visual sem depender de glifos especiais.
+### 4. Regras de cálculo (helpers em `src/lib/reporting.ts` — novo)
+Centralizar:
+- `getPerformanceBand(v)` → 'excellent' | 'satisfactory' | 'attention' | 'critical' (mesmas faixas do texto).
+- `getEmployeeStatus(emp)` → status geral aplicando regra da maior criticidade.
+- `getPunctualityRate(emp)` e `getFulfillmentRate(emp)` conforme fórmulas.
+- Considerar metas "vencidas sem entrega" como não entregues; "no prazo ainda pendentes" não contam como atraso.
+- Percentuais com até 3 casas, inteiros sem decimais desnecessárias (`formatSmartPercent`).
+- Respeitar filtros; nunca preencher ausência com 0 — retornar "Não informado".
 
-### C) Garantir suporte a acentos no jsPDF
+### 5. O que NÃO muda
+- Estrutura de dados (`Employee`, `Goal`), hooks (`useMonthlyEmployees`, etc.), tabelas do backend.
+- Filtros já existentes (mês + status colaborador) — apenas adicionamos os novos.
+- Cálculos existentes (`calculateTotalPerformance`, `calculateGoalsPerformance`) permanecem canônicos; novos helpers os reutilizam.
+- Exportação Excel atual continua disponível (mantida como está, sem regressão).
+- Nenhuma outra aba (Ranking, Colaboradores, Dashboards) é alterada.
 
-Habilitar UTF-8 explicitamente ao criar o documento (`new jsPDF({ putOnlyUsedFonts: true })` + uso consistente de strings em UTF-8) — a fonte Helvetica padrão já cobre acentos latinos, então isso resolve o ranking sem precisar embutir fonte custom.
+## Detalhes técnicos
 
-## Resultado esperado
+- **Novas dependências**: `jspdf-autotable`, `html2canvas`, `recharts` (já usado no projeto — reutilizar).
+- **Novos arquivos**:
+  - `src/lib/reporting.ts` — helpers de faixas, status geral, pontualidade, alertas, formatação.
+  - `src/components/dashboard/export/ExecutiveSummary.tsx`
+  - `src/components/dashboard/export/BandDistribution.tsx`
+  - `src/components/dashboard/export/GeneralRanking.tsx`
+  - `src/components/dashboard/export/DeadlineIndicators.tsx`
+  - `src/components/dashboard/export/SectorComparison.tsx`
+  - `src/components/dashboard/export/HistoricalEvolution.tsx`
+  - `src/components/dashboard/export/ConsistencyIndicators.tsx`
+  - `src/components/dashboard/export/AlertsPanel.tsx`
+  - `src/components/dashboard/export/IndividualReportDialog.tsx`
+  - `src/lib/pdf/managerialReport.ts` — geração do PDF gerencial.
+  - `src/lib/pdf/individualReport.ts` — geração do PDF individual.
+- **Refatorar** `ExportTab.tsx` para orquestrar as seções e disparar os dois PDFs.
 
-- Tela de Exportar passa a ter dois filtros: **Mês** e **Status do Colaborador**.
-- PDF exibe o ranking com nomes legíveis (ex.: `1º [TOP 3] GISLANDE MUNIZ BATISTA - SST   104,97%`) sem caracteres corrompidos.
-- Excel respeita o mesmo filtro de status.
+## Fora de escopo
 
-## Fora do escopo
+- Alterar Ranking, Dashboards, cadastro de colaboradores ou modelo de dados.
+- Comparação histórica sem dados extras: apenas com meses já carregados em memória. Se necessário, um fetch adicional dos meses anteriores fica como *follow-up* (posso incluir se você confirmar).
 
-- Não altero a página de ranking principal (apenas o relatório exportado).
-- Não embuto fonte custom no PDF (mantemos Helvetica + texto ASCII para os badges).
+## Confirmação
+Quer que eu implemente tudo isso em um único passo? Se preferir fatiar (ex.: primeiro painel na tela + PDF gerencial, depois relatório individual), me diga.
