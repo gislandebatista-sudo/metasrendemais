@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import ColaboradorDashboard from "./pages/ColaboradorDashboard";
 import Setup from "./pages/Setup";
 import NotFound from "./pages/NotFound";
+import AnnualPlanning from "./pages/AnnualPlanning";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requiredRole="colaborador">
                     <ColaboradorDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/planejamento-anual"
+                element={
+                  <ProtectedRoute>
+                    <AnnualPlanning />
                   </ProtectedRoute>
                 }
               />
