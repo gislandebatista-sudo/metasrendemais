@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      annual_macro_goals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deadline: string | null
+          id: string
+          last_modified_by: string | null
+          month: number
+          name: string
+          notes: string | null
+          progress: number
+          responsible: string | null
+          status: string
+          updated_at: string
+          weight: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          id?: string
+          last_modified_by?: string | null
+          month: number
+          name: string
+          notes?: string | null
+          progress?: number
+          responsible?: string | null
+          status?: string
+          updated_at?: string
+          weight?: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          id?: string
+          last_modified_by?: string | null
+          month?: number
+          name?: string
+          notes?: string | null
+          progress?: number
+          responsible?: string | null
+          status?: string
+          updated_at?: string
+          weight?: number
+          year?: number
+        }
+        Relationships: []
+      }
       employee_monthly_bonus: {
         Row: {
           bonus_description: string | null

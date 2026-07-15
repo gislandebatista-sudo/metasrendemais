@@ -1,4 +1,5 @@
-import { Users, Send, Undo2, EyeOff, Eye, LogOut } from 'lucide-react';
+import { Users, Send, Undo2, EyeOff, Eye, LogOut, CalendarRange } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { MonthSelector } from './MonthSelector';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
@@ -60,6 +61,15 @@ export function Header({ selectedMonth, onMonthChange, totalEmployees, isPublish
             <Button variant="ghost" size="sm" className="gap-1.5 text-xs h-8 hover:bg-secondary" onClick={onTogglePercentages}>
               {hidePercentages ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               {hidePercentages ? 'Mostrar' : 'Ocultar'}
+            </Button>
+          )}
+
+          {isAdmin && (
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+              <Link to="/planejamento-anual">
+                <CalendarRange className="w-3.5 h-3.5" />
+                Planejamento Anual
+              </Link>
             </Button>
           )}
 
