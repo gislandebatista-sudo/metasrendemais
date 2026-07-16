@@ -27,11 +27,12 @@ import {
   Plus,
   Pencil,
   Trash2,
-  X,
   ChevronDown,
   History,
   Loader2,
+  FileDown,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface AnnualGoal {
   id: string;
@@ -54,13 +55,26 @@ const MONTH_NAMES = [
   'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO',
 ];
 
-const PROGRESS_OPTIONS = [
-  { value: 0, label: '0% — Planejada' },
-  { value: 25, label: '25% — Em andamento' },
-  { value: 50, label: '50% — Metade' },
-  { value: 75, label: '75% — Quase concluída' },
-  { value: 100, label: '100% — Concluída' },
+type StatusKey = 'planejada' | 'em_andamento' | 'concluida';
+
+const STATUS_OPTIONS: { value: StatusKey; label: string; progress: number }[] = [
+  { value: 'planejada',    label: 'Planejada',    progress: 0 },
+  { value: 'em_andamento', label: 'Em andamento', progress: 50 },
+  { value: 'concluida',    label: 'Concluída',    progress: 100 },
 ];
+
+const STATUS_META: Record<StatusKey, { label: string; progress: number; className: string }> = {
+  planejada:    { label: 'Planejada',    progress: 0,   className: 'text-muted-foreground border-border' },
+  em_andamento: { label: 'Em andamento', progress: 50,  className: 'text-primary border-primary/40' },
+  concluida:    { label: 'Concluída',    progress: 100, className: 'text-emerald-500 border-emerald-500/40' },
+};
+
+const normalizeStatus = (g: AnnualGoal): StatusKey => {
+  const s = (g.status || '').toLowerCase();
+  if (s === 'concluida' || s === 'concluída' || g.progress >= 100) return 'concluida';
+  if (s === 'em_andamento' || s === 'em andamento' || g.progress > 0) return 'em_andamento';
+  return 'planejada';
+};
 
 export default function AnnualPlanning() {
   const { isAdmin } = useAuth();
@@ -108,18 +122,21 @@ export default function AnnualPlanning() {
     return map;
   }, [goals]);
 
-  const annualProgress = useMemo(() => {
-    if (goals.length === 0) return 0;
-    const sum = goals.reduce((acc, g) => acc + (g.progress || 0), 0);
-    return Math.round(sum / goals.length);
-  }, [goals]);
-
-  const monthProgress = (m: number) => {
+  // Each month = 100/12 (~8.33%) of the year. A month contributes its own
+  // completion ratio (0 planejada, 0.5 em andamento, 1 concluída) of that slice.
+  const monthCompletion = (m: number) => {
     const list = goalsByMonth.get(m) || [];
     if (list.length === 0) return 0;
-    const sum = list.reduce((acc, g) => acc + (g.progress || 0), 0);
-    return Math.round(sum / list.length);
+    const sum = list.reduce((acc, g) => acc + STATUS_META[normalizeStatus(g)].progress, 0);
+    return sum / list.length; // 0-100
   };
+
+  const annualProgress = useMemo(() => {
+    let total = 0;
+    for (let m = 1; m <= 12; m++) total += monthCompletion(m) / 12;
+    return Math.round(total);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goals]);
 
   if (!isAdmin) {
     return (
@@ -206,7 +223,7 @@ export default function AnnualPlanning() {
             {MONTH_NAMES.map((label, i) => {
               const month = i + 1;
               const list = goalsByMonth.get(month) || [];
-              const prog = monthProgress(month);
+              const prog = Math.round(monthCompletion(month));
               return (
                 <button
                   key={month}
@@ -284,7 +301,9 @@ function MonthModal({ open, onOpenChange, year, month, goals, onChanged }: Month
   const progress =
     goals.length === 0
       ? 0
-      : Math.round(goals.reduce((a, g) => a + (g.progress || 0), 0) / goals.length);
+      : Math.round(
+          goals.reduce((a, g) => a + STATUS_META[normalizeStatus(g)].progress, 0) / goals.length
+        );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -397,6 +416,8 @@ function GoalRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const status = normalizeStatus(goal);
+  const meta = STATUS_META[status];
 
   const handleDelete = async () => {
     if (!confirm(`Excluir a meta "${goal.name}"?`)) return;
@@ -416,45 +437,46 @@ function GoalRow({
 
   return (
     <div className="border border-border rounded-lg bg-secondary/30">
-      <div className="flex items-center gap-3 p-3">
+      <div className="flex items-start gap-3 p-3">
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex-1 flex items-center gap-3 text-left"
+          className="flex-1 min-w-0 flex items-start gap-3 text-left"
         >
           <ChevronDown
-            className={`w-4 h-4 text-muted-foreground transition-transform ${
+            className={`w-4 h-4 mt-1 shrink-0 text-muted-foreground transition-transform ${
               expanded ? 'rotate-0' : '-rotate-90'
             }`}
           />
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{goal.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {goal.responsible || 'Sem responsável'}
-              {goal.deadline && ` · Prazo: ${goal.deadline}`}
+            <p className="font-medium break-words whitespace-normal">{goal.name}</p>
+            <p className="text-xs text-muted-foreground break-words whitespace-normal">
+              {goal.deadline ? `Prazo: ${goal.deadline}` : 'Sem prazo definido'}
               {goal.weight > 0 && ` · Peso ${goal.weight}%`}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-primary tabular-nums leading-none">
-              {goal.progress}%
-            </p>
-          </div>
+          <span
+            className={`shrink-0 text-[10px] font-semibold tracking-widest uppercase px-2 py-1 rounded-md border ${meta.className}`}
+          >
+            {meta.label}
+          </span>
         </button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
-          <Pencil className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-8 w-8 text-destructive"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex shrink-0">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-destructive"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
       {expanded && goal.notes && (
-        <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground whitespace-pre-wrap">
+        <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground whitespace-pre-wrap break-words">
           {goal.notes}
         </div>
       )}
@@ -478,10 +500,9 @@ function GoalForm({
   onSaved: () => void;
 }) {
   const [name, setName] = useState(goal?.name ?? '');
-  const [responsible, setResponsible] = useState(goal?.responsible ?? '');
   const [deadline, setDeadline] = useState(goal?.deadline ?? '');
   const [weight, setWeight] = useState<string>(goal ? String(goal.weight) : '20');
-  const [progress, setProgress] = useState<number>(goal?.progress ?? 0);
+  const [status, setStatus] = useState<StatusKey>(goal ? normalizeStatus(goal) : 'planejada');
   const [notes, setNotes] = useState(goal?.notes ?? '');
   const [saving, setSaving] = useState(false);
 
@@ -495,11 +516,11 @@ function GoalForm({
       year,
       month,
       name: name.trim(),
-      responsible: responsible.trim() || null,
+      responsible: null,
       deadline: deadline.trim() || null,
       weight: parseFloat(weight) || 0,
-      progress,
-      status: progress >= 100 ? 'concluida' : progress > 0 ? 'em_andamento' : 'planejada',
+      progress: STATUS_META[status].progress,
+      status,
       notes: notes.trim() || null,
     };
 
@@ -526,25 +547,14 @@ function GoalForm({
         <Label className="text-[10px] tracking-widest text-muted-foreground">
           META MACRO
         </Label>
-        <Input
+        <Textarea
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Digite a meta planejada"
-          className="mt-1"
+          className="mt-1 min-h-[60px]"
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] tracking-widest text-muted-foreground">
-            RESPONSÁVEL
-          </Label>
-          <Input
-            value={responsible}
-            onChange={(e) => setResponsible(e.target.value)}
-            placeholder="Nome ou setor"
-            className="mt-1"
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <Label className="text-[10px] tracking-widest text-muted-foreground">
             PRAZO
@@ -572,18 +582,18 @@ function GoalForm({
         </div>
         <div>
           <Label className="text-[10px] tracking-widest text-muted-foreground">
-            PROGRESSO
+            STATUS
           </Label>
           <Select
-            value={String(progress)}
-            onValueChange={(v) => setProgress(parseInt(v, 10))}
+            value={status}
+            onValueChange={(v) => setStatus(v as StatusKey)}
           >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PROGRESS_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={String(o.value)}>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
                   {o.label}
                 </SelectItem>
               ))}
@@ -636,17 +646,131 @@ function HistoryDialog({
     return Array.from(map.entries()).sort(([a], [b]) => a - b);
   }, [goals]);
 
+  const handleExportPdf = () => {
+    try {
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const marginX = 40;
+      let y = 50;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text(`Histórico de Metas Anuais — ${year}`, marginX, y);
+      y += 8;
+      doc.setDrawColor(230, 120, 40);
+      doc.setLineWidth(1.2);
+      doc.line(marginX, y, pageW - marginX, y);
+      y += 20;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      doc.text(
+        `Gerado em ${new Date().toLocaleString('pt-BR')}`,
+        marginX,
+        y
+      );
+      y += 20;
+      doc.setTextColor(0);
+
+      if (grouped.length === 0) {
+        doc.setFontSize(12);
+        doc.text(`Nenhuma meta cadastrada em ${year}.`, marginX, y);
+      } else {
+        grouped.forEach(([month, list]) => {
+          if (y > pageH - 80) {
+            doc.addPage();
+            y = 50;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(13);
+          doc.setTextColor(230, 120, 40);
+          doc.text(MONTH_NAMES[month - 1], marginX, y);
+          doc.setTextColor(0);
+          y += 16;
+
+          list.forEach((g) => {
+            const status = STATUS_META[normalizeStatus(g)];
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            const nameLines = doc.splitTextToSize(g.name, pageW - marginX * 2 - 90);
+            if (y + nameLines.length * 13 > pageH - 60) {
+              doc.addPage();
+              y = 50;
+            }
+            doc.text(nameLines, marginX, y);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(120);
+            doc.text(status.label.toUpperCase(), pageW - marginX, y, { align: 'right' });
+            doc.setTextColor(0);
+            y += nameLines.length * 13 + 2;
+
+            const meta: string[] = [];
+            if (g.deadline) meta.push(`Prazo: ${g.deadline}`);
+            if (g.weight > 0) meta.push(`Peso ${g.weight}%`);
+            if (meta.length) {
+              doc.setFontSize(9);
+              doc.setTextColor(110);
+              doc.text(meta.join(' · '), marginX, y);
+              doc.setTextColor(0);
+              y += 12;
+            }
+
+            if (g.notes) {
+              doc.setFontSize(9);
+              doc.setTextColor(90);
+              const notesLines = doc.splitTextToSize(g.notes, pageW - marginX * 2);
+              if (y + notesLines.length * 11 > pageH - 60) {
+                doc.addPage();
+                y = 50;
+              }
+              doc.text(notesLines, marginX, y);
+              y += notesLines.length * 11;
+              doc.setTextColor(0);
+            }
+            y += 8;
+            doc.setDrawColor(230);
+            doc.line(marginX, y - 4, pageW - marginX, y - 4);
+          });
+          y += 10;
+        });
+      }
+
+      doc.save(`historico-metas-anuais-${year}.pdf`);
+      toast.success('PDF exportado');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao exportar PDF');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="w-5 h-5 text-primary" />
-            Histórico de metas anuais — {year}
-          </DialogTitle>
-          <DialogDescription>
-            Consulta completa das metas macro cadastradas no ano.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-primary" />
+                Histórico de metas anuais — {year}
+              </DialogTitle>
+              <DialogDescription>
+                Consulta completa das metas macro cadastradas no ano.
+              </DialogDescription>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 shrink-0"
+              onClick={handleExportPdf}
+              disabled={goals.length === 0}
+            >
+              <FileDown className="w-4 h-4" />
+              Exportar PDF
+            </Button>
+          </div>
         </DialogHeader>
 
         {grouped.length === 0 ? (
@@ -661,21 +785,27 @@ function HistoryDialog({
                   {MONTH_NAMES[month - 1]}
                 </h3>
                 <div className="border border-border rounded-lg divide-y divide-border">
-                  {list.map((g) => (
-                    <div key={g.id} className="p-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{g.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {g.responsible || '—'}
-                          {g.deadline && ` · ${g.deadline}`}
-                          {g.weight > 0 && ` · Peso ${g.weight}%`}
-                        </p>
+                  {list.map((g) => {
+                    const meta = STATUS_META[normalizeStatus(g)];
+                    return (
+                      <div key={g.id} className="p-3 flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium break-words whitespace-normal">
+                            {g.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground break-words whitespace-normal">
+                            {g.deadline ? g.deadline : 'Sem prazo'}
+                            {g.weight > 0 && ` · Peso ${g.weight}%`}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-[10px] font-semibold tracking-widest uppercase px-2 py-1 rounded-md border ${meta.className}`}
+                        >
+                          {meta.label}
+                        </span>
                       </div>
-                      <span className="text-lg font-bold text-primary tabular-nums">
-                        {g.progress}%
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
