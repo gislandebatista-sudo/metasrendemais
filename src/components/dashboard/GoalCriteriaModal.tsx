@@ -11,6 +11,41 @@ import { GoalCriteria } from '@/types/employee';
 import { toast } from 'sonner';
 import { formatPercent, cn } from '@/lib/utils';
 
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={1}
+      className={cn(
+        'min-h-[32px] h-auto py-1.5 px-2 resize-none overflow-hidden leading-tight',
+        className
+      )}
+    />
+  );
+}
+
 interface GoalCriteriaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
