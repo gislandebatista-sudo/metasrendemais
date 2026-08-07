@@ -246,13 +246,13 @@ export function MacroGoalCompositionModal({
                   </TableRow>
                 ) : (
                   template.map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <Input
+                    <TableRow key={i} className="align-top">
+                      <TableCell className="align-middle">
+                        <AutoResizeTextarea
                           value={row.name}
-                          onChange={e => updateRow(i, 'name', e.target.value)}
+                          onChange={val => updateRow(i, 'name', val)}
                           placeholder="Nome do critério"
-                          className="h-8 text-sm"
+                          className="text-sm"
                         />
                       </TableCell>
                       <TableCell className="text-right">
