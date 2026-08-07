@@ -9,8 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { GoalCriteria } from '@/types/employee';
 import { toast } from 'sonner';
-import { formatPercent } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { formatPercent, cn } from '@/lib/utils';
 
 interface GoalCriteriaModalProps {
   open: boolean;
