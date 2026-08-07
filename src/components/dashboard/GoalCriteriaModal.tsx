@@ -209,16 +209,16 @@ export function GoalCriteriaModal({
                   </TableRow>
                 ) : (
                   criteria.map((row, i) => (
-                  <TableRow key={row.id || `new-${i}`}>
+                  <TableRow key={row.id || `new-${i}`} className="align-top">
                       <TableCell className="align-middle">
                         {readOnly ? (
                           <span className="text-sm break-words whitespace-normal">{row.name}</span>
                         ) : (
-                          <Input
+                          <AutoResizeTextarea
                             value={row.name}
-                            onChange={e => updateRow(i, 'name', e.target.value)}
+                            onChange={val => updateRow(i, 'name', val)}
                             placeholder="Nome do critério"
-                            className="h-8 text-sm break-words whitespace-normal"
+                            className="text-sm"
                           />
                         )}
                       </TableCell>
