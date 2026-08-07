@@ -1,14 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Save, ListChecks } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { GoalCriteria } from '@/types/employee';
 import { toast } from 'sonner';
-import { formatPercent } from '@/lib/utils';
+import { formatPercent, cn } from '@/lib/utils';
+
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={1}
+      className={cn(
+        'min-h-[32px] h-auto py-1.5 px-2 resize-none overflow-hidden leading-tight',
+        className
+      )}
+    />
+  );
+}
 
 interface GoalCriteriaModalProps {
   open: boolean;
@@ -173,16 +209,16 @@ export function GoalCriteriaModal({
                   </TableRow>
                 ) : (
                   criteria.map((row, i) => (
-                    <TableRow key={row.id || `new-${i}`}>
-                      <TableCell>
+                  <TableRow key={row.id || `new-${i}`} className="align-top">
+                      <TableCell className="align-middle">
                         {readOnly ? (
-                          <span className="text-sm">{row.name}</span>
+                          <span className="text-sm break-words whitespace-normal">{row.name}</span>
                         ) : (
-                          <Input
+                          <AutoResizeTextarea
                             value={row.name}
-                            onChange={e => updateRow(i, 'name', e.target.value)}
+                            onChange={val => updateRow(i, 'name', val)}
                             placeholder="Nome do critério"
-                            className="h-8 text-sm"
+                            className="text-sm"
                           />
                         )}
                       </TableCell>

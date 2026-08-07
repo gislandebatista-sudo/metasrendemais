@@ -1,11 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Save, ListChecks, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+function AutoResizeTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={1}
+      className={cn(
+        'min-h-[32px] h-auto py-1.5 px-2 resize-none overflow-hidden leading-tight',
+        className
+      )}
+    />
+  );
+}
 
 interface MacroGoalCompositionModalProps {
   open: boolean;
@@ -209,13 +246,13 @@ export function MacroGoalCompositionModal({
                   </TableRow>
                 ) : (
                   template.map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        <Input
+                    <TableRow key={i} className="align-top">
+                      <TableCell className="align-middle">
+                        <AutoResizeTextarea
                           value={row.name}
-                          onChange={e => updateRow(i, 'name', e.target.value)}
+                          onChange={val => updateRow(i, 'name', val)}
                           placeholder="Nome do critério"
-                          className="h-8 text-sm"
+                          className="text-sm"
                         />
                       </TableCell>
                       <TableCell className="text-right">
