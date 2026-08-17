@@ -203,6 +203,17 @@ export function useMonthlyEmployees(selectedMonth: string) {
 
       const existingGoalIds = new Set((existingGoals || []).map(g => g.id));
 
+      // Only goals that are actually visible (active snapshot) in the CURRENT month
+      // may be soft-deleted. Goals belonging to other months must never be touched.
+      const { data: monthProgressRows, error: monthProgressError } = await supabase
+        .from('goal_monthly_progress')
+        .select('goal_id')
+        .eq('month', activeMonth)
+        .eq('is_deleted', false)
+        .in('goal_id', existingGoalIds.size > 0 ? [...existingGoalIds] : ['00000000-0000-0000-0000-000000000000']);
+      if (monthProgressError) throw monthProgressError;
+      const activeInMonth = new Set((monthProgressRows || []).map(r => r.goal_id));
+
       const allGoalsWithType = [
         ...employee.macroGoals.map(g => ({ ...g, goal_type: 'macro' as const })),
         ...employee.sectoralGoals.map(g => ({ ...g, goal_type: 'sectoral' as const })),
@@ -211,7 +222,7 @@ export function useMonthlyEmployees(selectedMonth: string) {
       const goalsToUpdate = allGoalsWithType.filter(g => existingGoalIds.has(g.id));
       const goalsToInsert = allGoalsWithType.filter(g => !existingGoalIds.has(g.id));
       const incomingIds = new Set(allGoalsWithType.map(g => g.id));
-      const goalsToRemoveFromMonth = [...existingGoalIds].filter(id => !incomingIds.has(id));
+      const goalsToRemoveFromMonth = [...activeInMonth].filter(id => !incomingIds.has(id));
 
       // Update existing goals base data (parallel)
       await Promise.all(goalsToUpdate.map(async (goal) => {
@@ -249,22 +260,17 @@ export function useMonthlyEmployees(selectedMonth: string) {
         newGoalIds = (inserted || []).map(g => g.id);
       }
 
-      // SOFT-DELETE goals from THIS MONTH ONLY (mark as is_deleted in goal_monthly_progress)
-      // Do NOT delete from the goals table - this preserves other months' data
+      // SOFT-DELETE goals from THIS MONTH ONLY — update existing rows (never create
+      // new rows and never touch other months), preserving the month's snapshot data
       if (goalsToRemoveFromMonth.length > 0) {
         const { error: softDeleteError } = await supabase
           .from('goal_monthly_progress')
-          .upsert(
-            goalsToRemoveFromMonth.map(goalId => ({
-              goal_id: goalId,
-              month: activeMonth,
-              is_deleted: true,
-              achieved: 0,
-            })),
-            { onConflict: 'goal_id,month' }
-          );
+          .update({ is_deleted: true })
+          .eq('month', activeMonth)
+          .in('goal_id', goalsToRemoveFromMonth);
         if (softDeleteError) throw softDeleteError;
       }
+
 
       // Create/update monthly snapshot entries for ALL active goals in the current month
       const allCurrentGoalIds = [
