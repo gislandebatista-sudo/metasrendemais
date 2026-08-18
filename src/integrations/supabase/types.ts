@@ -545,6 +545,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_view_all_data: { Args: never; Returns: boolean }
       get_employee_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_my_ranking_position: {
         Args: { target_month: string }
