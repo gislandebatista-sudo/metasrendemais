@@ -47,7 +47,6 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   inactive: 'Apenas Inativos',
 };
 
-export function ExportTab({ employees }: ExportTabProps) {
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
