@@ -20,9 +20,8 @@ import { formatDateBR, formatPercent } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
-interface ExportTabProps {
-  employees: Employee[];
-}
+export function ExportTab() {
+  const { employees, isLoading } = useExportEmployees();
 
 const MONTHS = [
   { value: 'all', label: 'Todos os Meses' },
