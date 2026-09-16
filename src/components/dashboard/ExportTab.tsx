@@ -20,9 +20,6 @@ import { formatDateBR, formatPercent } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
-export function ExportTab() {
-  const { employees, isLoading } = useExportEmployees();
-
 const MONTHS = [
   { value: 'all', label: 'Todos os Meses' },
   { value: '01', label: 'Janeiro' },
@@ -47,6 +44,8 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   inactive: 'Apenas Inativos',
 };
 
+export function ExportTab() {
+  const { employees, isLoading } = useExportEmployees();
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
