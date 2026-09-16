@@ -356,7 +356,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="export" className="space-y-6">
-            <ExportTab employees={employees} />
+            <ExportTab />
           </TabsContent>
         </Tabs>
 
