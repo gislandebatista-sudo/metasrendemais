@@ -69,7 +69,7 @@ export function useExportEmployees() {
       bonusData.forEach(b => {
         if (!b.month) return;
         monthsSet.add(b.month);
-        bonusByEmployeeMonth.set(`${b.employeeId ?? b.employee_id}|${b.month}`, {
+        bonusByEmployeeMonth.set(`${b.employee_id}|${b.month}`, {
           employeeId: b.employee_id,
           performanceBonus: Number(b.performance_bonus),
           bonusDescription: b.bonus_description || undefined,
