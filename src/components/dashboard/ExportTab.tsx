@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { 
-  Employee, 
-  calculateTotalPerformance, 
-  calculateGoalsPerformance, 
+import {
+  calculateTotalPerformance,
+  calculateGoalsPerformance,
   getTotalGoalsWeight,
   getGoalStatus,
   getStatusLabel,
@@ -435,6 +434,18 @@ export function ExportTab() {
 
   const stats = calculateStats();
   const rankedEmployees = getRankedEmployees();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <div className="relative">
+          <Loader2 className="w-7 h-7 animate-spin text-primary" />
+          <div className="absolute inset-0 blur-xl bg-primary/40 rounded-full -z-10" />
+        </div>
+        <p className="text-sm text-muted-foreground font-mono-accent uppercase tracking-wider">Carregando dados</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
