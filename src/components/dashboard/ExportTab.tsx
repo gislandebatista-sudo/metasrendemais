@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useExportEmployees } from '@/hooks/useExportEmployees';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { 
-  Employee, 
-  calculateTotalPerformance, 
-  calculateGoalsPerformance, 
+import {
+  calculateTotalPerformance,
+  calculateGoalsPerformance,
   getTotalGoalsWeight,
   getGoalStatus,
   getStatusLabel,
@@ -18,10 +18,6 @@ import {
 import { formatDateBR, formatPercent } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-
-interface ExportTabProps {
-  employees: Employee[];
-}
 
 const MONTHS = [
   { value: 'all', label: 'Todos os Meses' },
@@ -47,7 +43,8 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
   inactive: 'Apenas Inativos',
 };
 
-export function ExportTab({ employees }: ExportTabProps) {
+export function ExportTab() {
+  const { employees, isLoading } = useExportEmployees();
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
@@ -437,6 +434,18 @@ export function ExportTab({ employees }: ExportTabProps) {
 
   const stats = calculateStats();
   const rankedEmployees = getRankedEmployees();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <div className="relative">
+          <Loader2 className="w-7 h-7 animate-spin text-primary" />
+          <div className="absolute inset-0 blur-xl bg-primary/40 rounded-full -z-10" />
+        </div>
+        <p className="text-sm text-muted-foreground font-mono-accent uppercase tracking-wider">Carregando dados</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
