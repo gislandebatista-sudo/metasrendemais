@@ -524,7 +524,26 @@ export function ExportTab() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Filters */}
-          <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-3xl">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Ano de Referência
+              </Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Anos</SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
