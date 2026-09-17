@@ -268,7 +268,7 @@ export function ExportTab() {
         if (index < 3) doc.setTextColor(249, 115, 22);
         else if (index < 10) doc.setTextColor(120, 120, 120);
         else doc.setTextColor(60, 60, 60);
-        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector}`, 15, yPos);
+        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector} (${emp.monthsCount} mes(es))`, 15, yPos);
         doc.setTextColor(60);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 30, yPos);
         yPos += 5;
