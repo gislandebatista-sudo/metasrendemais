@@ -434,7 +434,7 @@ export function ExportTab() {
       const detailedRows: Record<string, string | number>[] = [];
       
       data.forEach((emp, empIndex) => {
-        const ranking = rankedEmployees.findIndex(r => r.name === emp.name) + 1;
+        const ranking = rankedEmployees.findIndex(r => r.id === emp.baseId) + 1;
         const baseRow: Record<string, string | number> = {
           'Ranking': ranking,
           'Colaborador': emp.name,
