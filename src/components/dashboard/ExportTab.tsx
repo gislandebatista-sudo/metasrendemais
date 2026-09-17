@@ -254,7 +254,7 @@ export function ExportTab() {
       doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(12);
-      doc.text('RANKING DE DESEMPENHO', 15, yPos + 2);
+      doc.text('RANKING DE DESEMPENHO (MEDIA DO PERIODO)', 15, yPos + 2);
       yPos += 15;
 
       doc.setFontSize(9);
