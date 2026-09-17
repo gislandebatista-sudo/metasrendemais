@@ -642,11 +642,12 @@ export function ExportTab() {
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium">#</th>
                     <th className="text-left p-2 font-medium">Colaborador</th>
-                    <th className="text-center p-2 font-medium">Macro</th>
-                    <th className="text-center p-2 font-medium">Setorial</th>
-                    <th className="text-center p-2 font-medium">Bônus</th>
+                    <th className="text-center p-2 font-medium">Macro (méd.)</th>
+                    <th className="text-center p-2 font-medium">Setorial (méd.)</th>
+                    <th className="text-center p-2 font-medium">Bônus (méd.)</th>
+                    <th className="text-center p-2 font-medium">Meses</th>
                     <th className="text-center p-2 font-medium">Atrasos</th>
-                    <th className="text-center p-2 font-medium text-primary">Total</th>
+                    <th className="text-center p-2 font-medium text-primary">Média Total</th>
                   </tr>
                 </thead>
                 <tbody>
