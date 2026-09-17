@@ -397,7 +397,7 @@ export function ExportTab() {
       // Sheet 1: Dashboard Summary
       const summaryData = [
         ['INDICADORES DO DASHBOARD', ''],
-        ['Período', getMonthLabel(selectedMonth)],
+        ['Período', periodLabel],
         ['Data de Geração', new Date().toLocaleDateString('pt-BR')],
         ['', ''],
         ['Total de Colaboradores', stats.totalEmployees],
