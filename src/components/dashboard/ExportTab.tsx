@@ -651,10 +651,8 @@ export function ExportTab() {
                 </thead>
                 <tbody>
                   {rankedEmployees.map((emp, index) => {
-                    const macroPerf = calculateGoalsPerformance(emp.macroGoals);
-                    const sectoralPerf = calculateGoalsPerformance(emp.sectoralGoals);
-                    const delayed = getDelayedGoalsCount(emp);
-                    
+                    const delayed = emp.delayedGoals;
+
                     return (
                       <tr 
                         key={emp.id} 
@@ -669,9 +667,10 @@ export function ExportTab() {
                             <p className="text-xs text-muted-foreground">{emp.role} • {emp.sector}</p>
                           </div>
                         </td>
-                        <td className="text-center p-2">{formatPercent(macroPerf)}%</td>
-                        <td className="text-center p-2">{formatPercent(sectoralPerf)}%</td>
-                        <td className="text-center p-2">+{emp.performanceBonus}%</td>
+                        <td className="text-center p-2">{formatPercent(emp.macroPerf)}%</td>
+                        <td className="text-center p-2">{formatPercent(emp.sectoralPerf)}%</td>
+                        <td className="text-center p-2">+{formatPercent(emp.performanceBonus)}%</td>
+                        <td className="text-center p-2 text-muted-foreground">{emp.monthsCount}</td>
                         <td className="text-center p-2">
                           {delayed > 0 ? (
                             <span className="text-destructive font-medium">{delayed}</span>
