@@ -45,11 +45,17 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
 
 export function ExportTab() {
   const { employees, isLoading } = useExportEmployees();
+  const [selectedYear, setSelectedYear] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
 
+  const availableYears = Array.from(
+    new Set(employees.map(emp => emp.referenceMonth.split('-')[0]).filter(Boolean))
+  ).sort((a, b) => b.localeCompare(a));
+
   const filteredEmployees = employees.filter(emp => {
+    if (selectedYear !== 'all' && !emp.referenceMonth.startsWith(`${selectedYear}-`)) return false;
     if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
     if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
     return true;
@@ -59,22 +65,86 @@ export function ExportTab() {
     return MONTHS.find(m => m.value === month)?.label || month;
   };
 
-  // Calculate dashboard stats
+  const periodLabel = `${getMonthLabel(selectedMonth)}${selectedYear === 'all' ? '' : `/${selectedYear}`}`;
+
+  /**
+   * Ranking by PERSON: each collaborator appears once, with the AVERAGE of the
+   * percentages achieved across every month included in the selected period.
+   */
+  const getRankedEmployees = () => {
+    const groups = new Map<string, {
+      id: string;
+      name: string;
+      role: string;
+      sector: string;
+      status: 'active' | 'inactive';
+      months: string[];
+      totalPerf: number;
+      macroPerf: number;
+      sectoralPerf: number;
+      performanceBonus: number;
+      delayedGoals: number;
+      notDelivered: number;
+    }>();
+
+    filteredEmployees.forEach(emp => {
+      const baseId = emp.id.split('|')[0];
+      const entry = groups.get(baseId) || {
+        id: baseId,
+        name: emp.name,
+        role: emp.role,
+        sector: emp.sector,
+        status: emp.status,
+        months: [],
+        totalPerf: 0,
+        macroPerf: 0,
+        sectoralPerf: 0,
+        performanceBonus: 0,
+        delayedGoals: 0,
+        notDelivered: 0,
+      };
+      entry.months.push(emp.referenceMonth);
+      entry.totalPerf += calculateTotalPerformance(emp);
+      entry.macroPerf += calculateGoalsPerformance(emp.macroGoals);
+      entry.sectoralPerf += calculateGoalsPerformance(emp.sectoralGoals);
+      entry.performanceBonus += emp.performanceBonus;
+      entry.delayedGoals += getDelayedGoalsCount(emp);
+      entry.notDelivered += getNotDeliveredGoalsCount(emp);
+      groups.set(baseId, entry);
+    });
+
+    return Array.from(groups.values())
+      .map(entry => {
+        const n = entry.months.length || 1;
+        return {
+          ...entry,
+          monthsCount: entry.months.length,
+          totalPerf: entry.totalPerf / n,
+          macroPerf: entry.macroPerf / n,
+          sectoralPerf: entry.sectoralPerf / n,
+          performanceBonus: entry.performanceBonus / n,
+        };
+      })
+      .sort((a, b) => b.totalPerf - a.totalPerf || a.name.localeCompare(b.name));
+  };
+
+  // Calculate dashboard stats (based on the per-person averages)
   const calculateStats = () => {
-    const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active');
-    const performances = activeEmployees.map(emp => calculateTotalPerformance(emp));
-    
-    const averagePerformance = performances.length > 0 
-      ? performances.reduce((a, b) => a + b, 0) / performances.length 
+    const ranked = getRankedEmployees();
+    const activeEmployees = ranked.filter(emp => emp.status === 'active');
+    const performances = activeEmployees.map(emp => emp.totalPerf);
+
+    const averagePerformance = performances.length > 0
+      ? performances.reduce((a, b) => a + b, 0) / performances.length
       : 0;
-    
+
     const above100Count = performances.filter(p => p >= 100).length;
     const topPerformance = Math.max(...performances, 0);
-    const totalDelayedGoals = filteredEmployees.reduce((sum, emp) => sum + getDelayedGoalsCount(emp), 0);
-    const totalNotDelivered = filteredEmployees.reduce((sum, emp) => sum + getNotDeliveredGoalsCount(emp), 0);
+    const totalDelayedGoals = ranked.reduce((sum, emp) => sum + emp.delayedGoals, 0);
+    const totalNotDelivered = ranked.reduce((sum, emp) => sum + emp.notDelivered, 0);
 
     return {
-      totalEmployees: filteredEmployees.length,
+      totalEmployees: ranked.length,
       activeEmployees: activeEmployees.length,
       averagePerformance,
       above100Count,
@@ -84,15 +154,6 @@ export function ExportTab() {
     };
   };
 
-  // Sort employees by performance for ranking
-  const getRankedEmployees = () => {
-    return [...filteredEmployees]
-      .map(emp => ({
-        ...emp,
-        totalPerf: calculateTotalPerformance(emp),
-      }))
-      .sort((a, b) => b.totalPerf - a.totalPerf);
-  };
 
   const prepareExportData = () => {
     return filteredEmployees.map(emp => {
@@ -122,6 +183,7 @@ export function ExportTab() {
       const totalPerf = calculateTotalPerformance(emp);
       
       return {
+        baseId: emp.id.split('|')[0],
         name: emp.name,
         role: emp.role,
         sector: emp.sector,
@@ -159,7 +221,7 @@ export function ExportTab() {
       
       doc.setFontSize(12);
       doc.setTextColor(100);
-      doc.text(`Período: ${getMonthLabel(selectedMonth)} | Status: ${STATUS_LABELS[selectedStatus]}`, pageWidth / 2, 30, { align: 'center' });
+      doc.text(`Período: ${periodLabel} | Status: ${STATUS_LABELS[selectedStatus]}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, 37, { align: 'center' });
 
       let yPos = 50;
@@ -192,7 +254,7 @@ export function ExportTab() {
       doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(12);
-      doc.text('RANKING DE DESEMPENHO', 15, yPos + 2);
+      doc.text('RANKING DE DESEMPENHO (MEDIA DO PERIODO)', 15, yPos + 2);
       yPos += 15;
 
       doc.setFontSize(9);
@@ -206,7 +268,7 @@ export function ExportTab() {
         if (index < 3) doc.setTextColor(249, 115, 22);
         else if (index < 10) doc.setTextColor(120, 120, 120);
         else doc.setTextColor(60, 60, 60);
-        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector}`, 15, yPos);
+        doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector} (${emp.monthsCount} mes(es))`, 15, yPos);
         doc.setTextColor(60);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 30, yPos);
         yPos += 5;
@@ -221,12 +283,12 @@ export function ExportTab() {
         }
 
         // Employee Header
-        const ranking = rankedEmployees.findIndex(r => r.name === emp.name) + 1;
+        const ranking = rankedEmployees.findIndex(r => r.id === emp.baseId) + 1;
         doc.setFillColor(249, 115, 22);
         doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
-        doc.text(`${ranking}º | ${emp.name}`, 15, yPos + 2);
+        doc.text(`${ranking}º | ${emp.name} | ${emp.referenceMonth}`, 15, yPos + 2);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 25, yPos + 2);
         yPos += 15;
 
@@ -313,7 +375,7 @@ export function ExportTab() {
         yPos += 30;
       });
 
-      doc.save(`rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
+      doc.save(`rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -335,7 +397,7 @@ export function ExportTab() {
       // Sheet 1: Dashboard Summary
       const summaryData = [
         ['INDICADORES DO DASHBOARD', ''],
-        ['Período', getMonthLabel(selectedMonth)],
+        ['Período', periodLabel],
         ['Data de Geração', new Date().toLocaleDateString('pt-BR')],
         ['', ''],
         ['Total de Colaboradores', stats.totalEmployees],
@@ -352,7 +414,7 @@ export function ExportTab() {
 
       // Sheet 2: Ranking
       const rankingData = [
-        ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Status', 'Desempenho (%)'],
+        ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Status', 'Meses no Período', 'Média Desempenho (%)'],
         ...rankedEmployees.map((emp, index) => [
           index + 1,
           index < 3 ? 'Top 3' : index < 10 ? 'Top 10' : '',
@@ -360,18 +422,19 @@ export function ExportTab() {
           emp.sector,
           emp.role,
           emp.status === 'active' ? 'Ativo' : 'Inativo',
+          emp.monthsCount,
           formatPercent(emp.totalPerf),
         ])
       ];
       const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
-      wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 15 }];
+      wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 16 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking');
 
       // Sheet 3: Detailed Data with Goals
       const detailedRows: Record<string, string | number>[] = [];
       
       data.forEach((emp, empIndex) => {
-        const ranking = rankedEmployees.findIndex(r => r.name === emp.name) + 1;
+        const ranking = rankedEmployees.findIndex(r => r.id === emp.baseId) + 1;
         const baseRow: Record<string, string | number> = {
           'Ranking': ranking,
           'Colaborador': emp.name,
@@ -422,7 +485,7 @@ export function ExportTab() {
       XLSX.utils.book_append_sheet(wb, wsDetailed, 'Dados Detalhados');
 
       // Export
-      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
+      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting Excel:', error);
@@ -461,7 +524,26 @@ export function ExportTab() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Filters */}
-          <div className="grid gap-4 md:grid-cols-2 max-w-2xl">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-3xl">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Ano de Referência
+              </Label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Anos</SelectItem>
+                  {availableYears.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -581,19 +663,18 @@ export function ExportTab() {
                   <tr className="border-b">
                     <th className="text-left p-2 font-medium">#</th>
                     <th className="text-left p-2 font-medium">Colaborador</th>
-                    <th className="text-center p-2 font-medium">Macro</th>
-                    <th className="text-center p-2 font-medium">Setorial</th>
-                    <th className="text-center p-2 font-medium">Bônus</th>
+                    <th className="text-center p-2 font-medium">Macro (méd.)</th>
+                    <th className="text-center p-2 font-medium">Setorial (méd.)</th>
+                    <th className="text-center p-2 font-medium">Bônus (méd.)</th>
+                    <th className="text-center p-2 font-medium">Meses</th>
                     <th className="text-center p-2 font-medium">Atrasos</th>
-                    <th className="text-center p-2 font-medium text-primary">Total</th>
+                    <th className="text-center p-2 font-medium text-primary">Média Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rankedEmployees.map((emp, index) => {
-                    const macroPerf = calculateGoalsPerformance(emp.macroGoals);
-                    const sectoralPerf = calculateGoalsPerformance(emp.sectoralGoals);
-                    const delayed = getDelayedGoalsCount(emp);
-                    
+                    const delayed = emp.delayedGoals;
+
                     return (
                       <tr 
                         key={emp.id} 
@@ -608,9 +689,10 @@ export function ExportTab() {
                             <p className="text-xs text-muted-foreground">{emp.role} • {emp.sector}</p>
                           </div>
                         </td>
-                        <td className="text-center p-2">{formatPercent(macroPerf)}%</td>
-                        <td className="text-center p-2">{formatPercent(sectoralPerf)}%</td>
-                        <td className="text-center p-2">+{emp.performanceBonus}%</td>
+                        <td className="text-center p-2">{formatPercent(emp.macroPerf)}%</td>
+                        <td className="text-center p-2">{formatPercent(emp.sectoralPerf)}%</td>
+                        <td className="text-center p-2">+{formatPercent(emp.performanceBonus)}%</td>
+                        <td className="text-center p-2 text-muted-foreground">{emp.monthsCount}</td>
                         <td className="text-center p-2">
                           {delayed > 0 ? (
                             <span className="text-destructive font-medium">{delayed}</span>
