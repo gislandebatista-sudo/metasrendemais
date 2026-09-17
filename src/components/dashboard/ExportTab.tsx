@@ -288,7 +288,7 @@ export function ExportTab() {
         doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(12);
-        doc.text(`${ranking}º | ${emp.name}`, 15, yPos + 2);
+        doc.text(`${ranking}º | ${emp.name} | ${emp.referenceMonth}`, 15, yPos + 2);
         doc.text(`${formatPercent(emp.totalPerf)}%`, pageWidth - 25, yPos + 2);
         yPos += 15;
 
