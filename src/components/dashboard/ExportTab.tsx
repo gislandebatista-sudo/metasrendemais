@@ -221,7 +221,7 @@ export function ExportTab() {
       
       doc.setFontSize(12);
       doc.setTextColor(100);
-      doc.text(`Período: ${getMonthLabel(selectedMonth)} | Status: ${STATUS_LABELS[selectedStatus]}`, pageWidth / 2, 30, { align: 'center' });
+      doc.text(`Período: ${periodLabel} | Status: ${STATUS_LABELS[selectedStatus]}`, pageWidth / 2, 30, { align: 'center' });
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, 37, { align: 'center' });
 
       let yPos = 50;
