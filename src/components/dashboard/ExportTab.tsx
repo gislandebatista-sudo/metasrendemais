@@ -183,6 +183,7 @@ export function ExportTab() {
       const totalPerf = calculateTotalPerformance(emp);
       
       return {
+        baseId: emp.id.split('|')[0],
         name: emp.name,
         role: emp.role,
         sector: emp.sector,
