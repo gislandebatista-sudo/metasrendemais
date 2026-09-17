@@ -283,7 +283,7 @@ export function ExportTab() {
         }
 
         // Employee Header
-        const ranking = rankedEmployees.findIndex(r => r.name === emp.name) + 1;
+        const ranking = rankedEmployees.findIndex(r => r.id === emp.baseId) + 1;
         doc.setFillColor(249, 115, 22);
         doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
         doc.setTextColor(255, 255, 255);
