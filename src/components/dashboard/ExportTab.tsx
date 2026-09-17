@@ -414,7 +414,7 @@ export function ExportTab() {
 
       // Sheet 2: Ranking
       const rankingData = [
-        ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Status', 'Desempenho (%)'],
+        ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Status', 'Meses no Período', 'Média Desempenho (%)'],
         ...rankedEmployees.map((emp, index) => [
           index + 1,
           index < 3 ? 'Top 3' : index < 10 ? 'Top 10' : '',
@@ -422,11 +422,12 @@ export function ExportTab() {
           emp.sector,
           emp.role,
           emp.status === 'active' ? 'Ativo' : 'Inativo',
+          emp.monthsCount,
           formatPercent(emp.totalPerf),
         ])
       ];
       const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
-      wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 15 }];
+      wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 16 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking');
 
       // Sheet 3: Detailed Data with Goals
