@@ -45,11 +45,17 @@ const STATUS_LABELS: Record<StatusFilter, string> = {
 
 export function ExportTab() {
   const { employees, isLoading } = useExportEmployees();
+  const [selectedYear, setSelectedYear] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
   const [isExporting, setIsExporting] = useState(false);
 
+  const availableYears = Array.from(
+    new Set(employees.map(emp => emp.referenceMonth.split('-')[0]).filter(Boolean))
+  ).sort((a, b) => b.localeCompare(a));
+
   const filteredEmployees = employees.filter(emp => {
+    if (selectedYear !== 'all' && !emp.referenceMonth.startsWith(`${selectedYear}-`)) return false;
     if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
     if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
     return true;
@@ -59,22 +65,86 @@ export function ExportTab() {
     return MONTHS.find(m => m.value === month)?.label || month;
   };
 
-  // Calculate dashboard stats
+  const periodLabel = `${getMonthLabel(selectedMonth)}${selectedYear === 'all' ? '' : `/${selectedYear}`}`;
+
+  /**
+   * Ranking by PERSON: each collaborator appears once, with the AVERAGE of the
+   * percentages achieved across every month included in the selected period.
+   */
+  const getRankedEmployees = () => {
+    const groups = new Map<string, {
+      id: string;
+      name: string;
+      role: string;
+      sector: string;
+      status: 'active' | 'inactive';
+      months: string[];
+      totalPerf: number;
+      macroPerf: number;
+      sectoralPerf: number;
+      performanceBonus: number;
+      delayedGoals: number;
+      notDelivered: number;
+    }>();
+
+    filteredEmployees.forEach(emp => {
+      const baseId = emp.id.split('|')[0];
+      const entry = groups.get(baseId) || {
+        id: baseId,
+        name: emp.name,
+        role: emp.role,
+        sector: emp.sector,
+        status: emp.status,
+        months: [],
+        totalPerf: 0,
+        macroPerf: 0,
+        sectoralPerf: 0,
+        performanceBonus: 0,
+        delayedGoals: 0,
+        notDelivered: 0,
+      };
+      entry.months.push(emp.referenceMonth);
+      entry.totalPerf += calculateTotalPerformance(emp);
+      entry.macroPerf += calculateGoalsPerformance(emp.macroGoals);
+      entry.sectoralPerf += calculateGoalsPerformance(emp.sectoralGoals);
+      entry.performanceBonus += emp.performanceBonus;
+      entry.delayedGoals += getDelayedGoalsCount(emp);
+      entry.notDelivered += getNotDeliveredGoalsCount(emp);
+      groups.set(baseId, entry);
+    });
+
+    return Array.from(groups.values())
+      .map(entry => {
+        const n = entry.months.length || 1;
+        return {
+          ...entry,
+          monthsCount: entry.months.length,
+          totalPerf: entry.totalPerf / n,
+          macroPerf: entry.macroPerf / n,
+          sectoralPerf: entry.sectoralPerf / n,
+          performanceBonus: entry.performanceBonus / n,
+        };
+      })
+      .sort((a, b) => b.totalPerf - a.totalPerf || a.name.localeCompare(b.name));
+  };
+
+  // Calculate dashboard stats (based on the per-person averages)
   const calculateStats = () => {
-    const activeEmployees = filteredEmployees.filter(emp => emp.status === 'active');
-    const performances = activeEmployees.map(emp => calculateTotalPerformance(emp));
-    
-    const averagePerformance = performances.length > 0 
-      ? performances.reduce((a, b) => a + b, 0) / performances.length 
+    const ranked = getRankedEmployees();
+    const activeEmployees = ranked.filter(emp => emp.status === 'active');
+    const performances = activeEmployees.map(emp => emp.totalPerf);
+
+    const averagePerformance = performances.length > 0
+      ? performances.reduce((a, b) => a + b, 0) / performances.length
       : 0;
-    
+
     const above100Count = performances.filter(p => p >= 100).length;
     const topPerformance = Math.max(...performances, 0);
-    const totalDelayedGoals = filteredEmployees.reduce((sum, emp) => sum + getDelayedGoalsCount(emp), 0);
-    const totalNotDelivered = filteredEmployees.reduce((sum, emp) => sum + getNotDeliveredGoalsCount(emp), 0);
+    const totalDelayedGoals = ranked.reduce((sum, emp) => sum + emp.delayedGoals, 0);
+    const totalNotDelivered = ranked.reduce((sum, emp) => sum + emp.notDelivered, 0);
 
     return {
-      totalEmployees: filteredEmployees.length,
+      totalEmployees: ranked.length,
       activeEmployees: activeEmployees.length,
       averagePerformance,
       above100Count,
@@ -84,15 +154,6 @@ export function ExportTab() {
     };
   };
 
-  // Sort employees by performance for ranking
-  const getRankedEmployees = () => {
-    return [...filteredEmployees]
-      .map(emp => ({
-        ...emp,
-        totalPerf: calculateTotalPerformance(emp),
-      }))
-      .sort((a, b) => b.totalPerf - a.totalPerf);
-  };
 
   const prepareExportData = () => {
     return filteredEmployees.map(emp => {
