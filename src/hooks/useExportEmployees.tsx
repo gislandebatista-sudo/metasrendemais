@@ -23,26 +23,36 @@ export function useExportEmployees() {
     try {
       setIsLoading(true);
 
-      const [employeesRes, goalsRes, progressRes, bonusRes] = await Promise.all([
-        isAdmin
+      // PostgREST caps each request at 1000 rows — page through everything so the
+      // export always reflects the full dataset (same numbers as the Ranking module).
+      const PAGE = 1000;
+      const fetchAllRows = async (build: () => any): Promise<any[]> => {
+        const rows: any[] = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await build().range(from, from + PAGE - 1);
+          if (error) throw error;
+          const batch = data || [];
+          rows.push(...batch);
+          if (batch.length < PAGE) break;
+        }
+        return rows;
+      };
+
+      const [employeesData, goalsData, progressData, bonusData] = await Promise.all([
+        fetchAllRows(() => (isAdmin
           ? supabase.from('employees').select('*').order('name')
-          : supabase.from('employees_secure' as any).select('*').order('name'),
-        supabase.from('goals').select('id, employee_id, goal_type, name, description, weight, deadline'),
-        supabase.from('goal_monthly_progress')
+          : supabase.from('employees_secure' as any).select('*').order('name'))),
+        fetchAllRows(() => supabase.from('goals')
+          .select('id, employee_id, goal_type, name, description, weight, deadline')
+          .order('id')),
+        fetchAllRows(() => supabase.from('goal_monthly_progress')
           .select('id, goal_id, month, achieved, delivery_date, observations, goal_name, goal_description, goal_weight, goal_deadline, goal_type')
-          .eq('is_deleted', false),
-        supabase.from('employee_monthly_bonus').select('employee_id, month, performance_bonus, bonus_description'),
+          .eq('is_deleted', false)
+          .order('id')),
+        fetchAllRows(() => supabase.from('employee_monthly_bonus')
+          .select('employee_id, month, performance_bonus, bonus_description')
+          .order('employee_id')),
       ]);
-
-      if (employeesRes.error) throw employeesRes.error;
-      if (goalsRes.error) throw goalsRes.error;
-      if (progressRes.error) throw progressRes.error;
-      if (bonusRes.error) throw bonusRes.error;
-
-      const employeesData = employeesRes.data || [];
-      const goalsData = goalsRes.data || [];
-      const progressData = progressRes.data || [];
-      const bonusData = bonusRes.data || [];
 
       const goalToEmployee = new Map<string, string>();
       const goalBaseInfo = new Map<string, { employee_id: string; goal_type: string; name: string; description: string | null; weight: number; deadline: string }>();
