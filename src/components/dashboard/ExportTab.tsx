@@ -501,7 +501,8 @@ export function ExportTab() {
       XLSX.utils.book_append_sheet(wb, wsDetailed, 'Dados Detalhados');
 
       // Export
-      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
+      const empSuffix = selectedEmployee === 'all' ? '' : `-${selectedEmployeeName.toLowerCase().replace(/\s+/g, '-')}`;
+      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}${empSuffix}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting Excel:', error);
