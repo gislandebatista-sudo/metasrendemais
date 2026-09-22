@@ -117,7 +117,8 @@ export function ExportTab() {
 
     return Array.from(groups.values())
       .map(entry => {
-        const n = entry.months.length || 1;
+        // Single month selected -> the month itself. Full year -> always divided by 12.
+        const n = selectedMonth !== 'all' ? (entry.months.length || 1) : 12;
         return {
           ...entry,
           monthsCount: entry.months.length,
