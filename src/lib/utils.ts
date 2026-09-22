@@ -6,13 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a number as a percentage string without any rounding.
- * Removes trailing zeros but keeps all meaningful decimal places.
- * E.g. 75.54 → "75,54", 100 → "100", 19.2400 → "19,24"
+ * Formats a number as a percentage string with at most 3 decimal places.
+ * Trailing zeros are removed.
+ * E.g. 75.54 → "75,54", 100 → "100", 82.2734444 → "82,273"
  */
 export function formatPercent(value: number): string {
-  // Use a high precision to avoid floating point display issues
-  const str = parseFloat(value.toFixed(10)).toString();
+  const str = parseFloat(value.toFixed(3)).toString();
   // Replace dot with comma for Brazilian locale
   return str.replace('.', ',');
 }
