@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp, Loader2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp, Loader2, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExportEmployees } from '@/hooks/useExportEmployees';
 import { Button } from '@/components/ui/button';
