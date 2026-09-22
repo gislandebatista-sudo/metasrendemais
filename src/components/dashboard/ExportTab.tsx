@@ -88,6 +88,8 @@ export function ExportTab() {
     }>();
 
     filteredEmployees.forEach(emp => {
+      // Months with no progress at all (everything at 0%) don't count towards the average
+      if (calculateTotalPerformance(emp) <= 0) return;
       const baseId = emp.id.split('|')[0];
       const entry = groups.get(baseId) || {
         id: baseId,
@@ -115,7 +117,8 @@ export function ExportTab() {
 
     return Array.from(groups.values())
       .map(entry => {
-        const n = entry.months.length || 1;
+        // Single month selected -> the month itself. Full year -> always divided by 12.
+        const n = selectedMonth !== 'all' ? (entry.months.length || 1) : 12;
         return {
           ...entry,
           monthsCount: entry.months.length,
