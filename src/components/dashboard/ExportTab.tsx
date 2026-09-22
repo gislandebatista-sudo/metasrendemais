@@ -48,16 +48,28 @@ export function ExportTab() {
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
 
   const availableYears = Array.from(
     new Set(employees.map(emp => emp.referenceMonth.split('-')[0]).filter(Boolean))
   ).sort((a, b) => b.localeCompare(a));
 
+  // Distinct collaborators (one entry per person, not per month)
+  const availableEmployees = Array.from(
+    new Map(employees.map(emp => [emp.id.split('|')[0], emp.name])).entries()
+  )
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const selectedEmployeeName =
+    availableEmployees.find(e => e.id === selectedEmployee)?.name || '';
+
   const filteredEmployees = employees.filter(emp => {
     if (selectedYear !== 'all' && !emp.referenceMonth.startsWith(`${selectedYear}-`)) return false;
     if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
     if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
+    if (selectedEmployee !== 'all' && emp.id.split('|')[0] !== selectedEmployee) return false;
     return true;
   });
 
