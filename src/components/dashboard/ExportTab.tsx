@@ -390,7 +390,8 @@ export function ExportTab() {
         yPos += 30;
       });
 
-      doc.save(`rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
+      const empSuffix = selectedEmployee === 'all' ? '' : `-${selectedEmployeeName.toLowerCase().replace(/\s+/g, '-')}`;
+      doc.save(`rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}${empSuffix}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
