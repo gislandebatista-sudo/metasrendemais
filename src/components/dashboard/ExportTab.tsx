@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp, Loader2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Calendar, Trophy, TrendingUp, Loader2, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExportEmployees } from '@/hooks/useExportEmployees';
 import { Button } from '@/components/ui/button';
@@ -48,16 +48,28 @@ export function ExportTab() {
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('active');
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [isExporting, setIsExporting] = useState(false);
 
   const availableYears = Array.from(
     new Set(employees.map(emp => emp.referenceMonth.split('-')[0]).filter(Boolean))
   ).sort((a, b) => b.localeCompare(a));
 
+  // Distinct collaborators (one entry per person, not per month)
+  const availableEmployees = Array.from(
+    new Map(employees.map(emp => [emp.id.split('|')[0], emp.name])).entries()
+  )
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const selectedEmployeeName =
+    availableEmployees.find(e => e.id === selectedEmployee)?.name || '';
+
   const filteredEmployees = employees.filter(emp => {
     if (selectedYear !== 'all' && !emp.referenceMonth.startsWith(`${selectedYear}-`)) return false;
     if (selectedMonth !== 'all' && !emp.referenceMonth.endsWith(`-${selectedMonth}`)) return false;
     if (selectedStatus !== 'all' && emp.status !== selectedStatus) return false;
+    if (selectedEmployee !== 'all' && emp.id.split('|')[0] !== selectedEmployee) return false;
     return true;
   });
 
@@ -378,7 +390,8 @@ export function ExportTab() {
         yPos += 30;
       });
 
-      doc.save(`rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.pdf`);
+      const empSuffix = selectedEmployee === 'all' ? '' : `-${selectedEmployeeName.toLowerCase().replace(/\s+/g, '-')}`;
+      doc.save(`rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}${empSuffix}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -488,7 +501,8 @@ export function ExportTab() {
       XLSX.utils.book_append_sheet(wb, wsDetailed, 'Dados Detalhados');
 
       // Export
-      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}.xlsx`);
+      const empSuffix = selectedEmployee === 'all' ? '' : `-${selectedEmployeeName.toLowerCase().replace(/\s+/g, '-')}`;
+      XLSX.writeFile(wb, `rende-mais-relatorio-${selectedYear === 'all' ? 'todos-anos' : selectedYear}-${selectedMonth === 'all' ? 'todos' : selectedMonth}-${selectedStatus}${empSuffix}.xlsx`);
       toast.success('Excel exportado com sucesso!');
     } catch (error) {
       console.error('Error exporting Excel:', error);
@@ -575,6 +589,25 @@ export function ExportTab() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Apenas Ativos</SelectItem>
                   <SelectItem value="inactive">Apenas Inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Colaborador
+              </Label>
+              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o colaborador" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <SelectItem value="all">Todos os Colaboradores</SelectItem>
+                  {availableEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
