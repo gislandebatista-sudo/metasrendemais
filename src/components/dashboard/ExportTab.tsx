@@ -88,6 +88,8 @@ export function ExportTab() {
     }>();
 
     filteredEmployees.forEach(emp => {
+      // Months with no progress at all (everything at 0%) don't count towards the average
+      if (calculateTotalPerformance(emp) <= 0) return;
       const baseId = emp.id.split('|')[0];
       const entry = groups.get(baseId) || {
         id: baseId,
