@@ -743,6 +743,57 @@ export function ExportTab() {
         </CardContent>
       </Card>
 
+      {/* DNA Ranking */}
+      {dnaRanking.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-primary" />
+              Ranking do DNA
+            </CardTitle>
+            <CardDescription>
+              Média do percentual alcançado na meta DNA no período selecionado ({periodLabel})
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2 font-medium">#</th>
+                    <th className="text-left p-2 font-medium">Colaborador</th>
+                    <th className="text-center p-2 font-medium">Peso (méd.)</th>
+                    <th className="text-center p-2 font-medium">Meses</th>
+                    <th className="text-center p-2 font-medium text-primary">Média DNA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dnaRanking.map((emp, index) => (
+                    <tr
+                      key={emp.id}
+                      className={`border-b hover:bg-muted/30 ${index < 3 ? 'bg-primary/5' : ''}`}
+                    >
+                      <td className="p-2 font-bold text-primary">
+                        {index + 1}º {index < 3 && '🏆'}
+                      </td>
+                      <td className="p-2">
+                        <div>
+                          <p className="font-medium">{emp.name}</p>
+                          <p className="text-xs text-muted-foreground">{emp.role} • {emp.sector}</p>
+                        </div>
+                      </td>
+                      <td className="text-center p-2 text-muted-foreground">{formatPercent(emp.weightAverage)}%</td>
+                      <td className="text-center p-2 text-muted-foreground">{emp.monthsCount}</td>
+                      <td className="text-center p-2 font-bold text-primary">{formatPercent(emp.dnaAverage)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview Table */}
       {filteredEmployees.length > 0 && (
         <Card>
