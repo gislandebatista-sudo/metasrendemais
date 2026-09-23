@@ -573,6 +573,7 @@ export function ExportTab() {
 
   const stats = calculateStats();
   const rankedEmployees = getRankedEmployees();
+  const dnaRanking = getDnaRanking();
 
   if (isLoading) {
     return (
