@@ -349,6 +349,39 @@ export function ExportTab() {
       });
       yPos += 10;
 
+      // DNA Ranking Section
+      const dnaRanked = getDnaRanking();
+      if (dnaRanked.length > 0) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.setFillColor(249, 115, 22);
+        doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.text('RANKING DO DNA (MEDIA DO PERIODO)', 15, yPos + 2);
+        yPos += 15;
+
+        doc.setFontSize(9);
+        dnaRanked.forEach((emp, index) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          const rankBadge = index < 3 ? '[TOP 3] ' : index < 10 ? '[TOP 10] ' : '';
+          if (index < 3) doc.setTextColor(249, 115, 22);
+          else if (index < 10) doc.setTextColor(120, 120, 120);
+          else doc.setTextColor(60, 60, 60);
+          doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector} (${emp.monthsCount} mes(es))`, 15, yPos);
+          doc.setTextColor(60);
+          doc.text(`${formatPercent(emp.dnaAverage)}%`, pageWidth - 30, yPos);
+          yPos += 5;
+        });
+        yPos += 10;
+      }
+
+
       // Detailed Employee Data
       data.forEach((emp, index) => {
         if (yPos > 230) {
@@ -504,6 +537,27 @@ export function ExportTab() {
       const wsRanking = XLSX.utils.aoa_to_sheet(rankingData);
       wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 16 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking');
+
+      // Sheet: DNA Ranking
+      const dnaRanked = getDnaRanking();
+      if (dnaRanked.length > 0) {
+        const dnaData = [
+          ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Meses no Período', 'Peso Médio (%)', 'Média DNA (%)'],
+          ...dnaRanked.map((emp, index) => [
+            index + 1,
+            index < 3 ? 'Top 3' : index < 10 ? 'Top 10' : '',
+            emp.name,
+            emp.sector,
+            emp.role,
+            emp.monthsCount,
+            formatPercent(emp.weightAverage),
+            formatPercent(emp.dnaAverage),
+          ])
+        ];
+        const wsDna = XLSX.utils.aoa_to_sheet(dnaData);
+        wsDna['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsDna, 'Ranking DNA');
+      }
 
       // Sheet 3: Detailed Data with Goals
       const detailedRows: Record<string, string | number>[] = [];
