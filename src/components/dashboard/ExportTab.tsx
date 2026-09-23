@@ -538,6 +538,27 @@ export function ExportTab() {
       wsRanking['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 16 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking');
 
+      // Sheet: DNA Ranking
+      const dnaRanked = getDnaRanking();
+      if (dnaRanked.length > 0) {
+        const dnaData = [
+          ['Posição', 'Destaque', 'Colaborador', 'Setor', 'Cargo', 'Meses no Período', 'Peso Médio (%)', 'Média DNA (%)'],
+          ...dnaRanked.map((emp, index) => [
+            index + 1,
+            index < 3 ? 'Top 3' : index < 10 ? 'Top 10' : '',
+            emp.name,
+            emp.sector,
+            emp.role,
+            emp.monthsCount,
+            formatPercent(emp.weightAverage),
+            formatPercent(emp.dnaAverage),
+          ])
+        ];
+        const wsDna = XLSX.utils.aoa_to_sheet(dnaData);
+        wsDna['!cols'] = [{ wch: 10 }, { wch: 10 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsDna, 'Ranking DNA');
+      }
+
       // Sheet 3: Detailed Data with Goals
       const detailedRows: Record<string, string | number>[] = [];
       
