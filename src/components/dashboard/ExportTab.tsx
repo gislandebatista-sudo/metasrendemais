@@ -349,6 +349,39 @@ export function ExportTab() {
       });
       yPos += 10;
 
+      // DNA Ranking Section
+      const dnaRanked = getDnaRanking();
+      if (dnaRanked.length > 0) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.setFillColor(249, 115, 22);
+        doc.rect(10, yPos - 5, pageWidth - 20, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.text('RANKING DO DNA (MEDIA DO PERIODO)', 15, yPos + 2);
+        yPos += 15;
+
+        doc.setFontSize(9);
+        dnaRanked.forEach((emp, index) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          const rankBadge = index < 3 ? '[TOP 3] ' : index < 10 ? '[TOP 10] ' : '';
+          if (index < 3) doc.setTextColor(249, 115, 22);
+          else if (index < 10) doc.setTextColor(120, 120, 120);
+          else doc.setTextColor(60, 60, 60);
+          doc.text(`${index + 1}o ${rankBadge}${emp.name} - ${emp.sector} (${emp.monthsCount} mes(es))`, 15, yPos);
+          doc.setTextColor(60);
+          doc.text(`${formatPercent(emp.dnaAverage)}%`, pageWidth - 30, yPos);
+          yPos += 5;
+        });
+        yPos += 10;
+      }
+
+
       // Detailed Employee Data
       data.forEach((emp, index) => {
         if (yPos > 230) {
