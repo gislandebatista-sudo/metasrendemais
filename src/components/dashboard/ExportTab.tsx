@@ -143,6 +143,65 @@ export function ExportTab() {
       .sort((a, b) => b.totalPerf - a.totalPerf || a.name.localeCompare(b.name));
   };
 
+  /**
+   * Ranking of the "DNA" goal only. Same averaging rules as the general ranking:
+   * per month the achieved % is capped at the goal weight, months without any DNA
+   * progress are ignored, single month -> own months, full year -> divided by 12.
+   */
+  const getDnaRanking = () => {
+    const isDnaGoal = (name: string) => name.toLowerCase().includes('dna');
+
+    const groups = new Map<string, {
+      id: string;
+      name: string;
+      role: string;
+      sector: string;
+      months: string[];
+      dnaSum: number;
+      weightSum: number;
+    }>();
+
+    filteredEmployees.forEach(emp => {
+      const dnaGoals = [...emp.macroGoals, ...emp.sectoralGoals].filter(g => isDnaGoal(g.name));
+      if (dnaGoals.length === 0) return;
+
+      const monthValue = dnaGoals.reduce(
+        (acc, g) => acc + (g.weight === 0 ? 0 : Math.min(g.achieved, g.weight)),
+        0
+      );
+      // Months without any DNA progress don't count towards the average
+      if (monthValue <= 0) return;
+
+      const monthWeight = dnaGoals.reduce((acc, g) => acc + g.weight, 0);
+      const baseId = emp.id.split('|')[0];
+      const entry = groups.get(baseId) || {
+        id: baseId,
+        name: emp.name,
+        role: emp.role,
+        sector: emp.sector,
+        months: [],
+        dnaSum: 0,
+        weightSum: 0,
+      };
+      entry.months.push(emp.referenceMonth);
+      entry.dnaSum += monthValue;
+      entry.weightSum += monthWeight;
+      groups.set(baseId, entry);
+    });
+
+    return Array.from(groups.values())
+      .map(entry => {
+        const n = selectedMonth !== 'all' ? (entry.months.length || 1) : 12;
+        return {
+          ...entry,
+          monthsCount: entry.months.length,
+          dnaAverage: entry.dnaSum / n,
+          weightAverage: entry.weightSum / (entry.months.length || 1),
+        };
+      })
+      .sort((a, b) => b.dnaAverage - a.dnaAverage || a.name.localeCompare(b.name));
+  };
+
   // Calculate dashboard stats (based on the per-person averages)
   const calculateStats = () => {
     const ranked = getRankedEmployees();
