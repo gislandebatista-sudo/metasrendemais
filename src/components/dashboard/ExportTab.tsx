@@ -143,6 +143,65 @@ export function ExportTab() {
       .sort((a, b) => b.totalPerf - a.totalPerf || a.name.localeCompare(b.name));
   };
 
+  /**
+   * Ranking of the "DNA" goal only. Same averaging rules as the general ranking:
+   * per month the achieved % is capped at the goal weight, months without any DNA
+   * progress are ignored, single month -> own months, full year -> divided by 12.
+   */
+  const getDnaRanking = () => {
+    const isDnaGoal = (name: string) => name.toLowerCase().includes('dna');
+
+    const groups = new Map<string, {
+      id: string;
+      name: string;
+      role: string;
+      sector: string;
+      months: string[];
+      dnaSum: number;
+      weightSum: number;
+    }>();
+
+    filteredEmployees.forEach(emp => {
+      const dnaGoals = [...emp.macroGoals, ...emp.sectoralGoals].filter(g => isDnaGoal(g.name));
+      if (dnaGoals.length === 0) return;
+
+      const monthValue = dnaGoals.reduce(
+        (acc, g) => acc + (g.weight === 0 ? 0 : Math.min(g.achieved, g.weight)),
+        0
+      );
+      // Months without any DNA progress don't count towards the average
+      if (monthValue <= 0) return;
+
+      const monthWeight = dnaGoals.reduce((acc, g) => acc + g.weight, 0);
+      const baseId = emp.id.split('|')[0];
+      const entry = groups.get(baseId) || {
+        id: baseId,
+        name: emp.name,
+        role: emp.role,
+        sector: emp.sector,
+        months: [],
+        dnaSum: 0,
+        weightSum: 0,
+      };
+      entry.months.push(emp.referenceMonth);
+      entry.dnaSum += monthValue;
+      entry.weightSum += monthWeight;
+      groups.set(baseId, entry);
+    });
+
+    return Array.from(groups.values())
+      .map(entry => {
+        const n = selectedMonth !== 'all' ? (entry.months.length || 1) : 12;
+        return {
+          ...entry,
+          monthsCount: entry.months.length,
+          dnaAverage: entry.dnaSum / n,
+          weightAverage: entry.weightSum / (entry.months.length || 1),
+        };
+      })
+      .sort((a, b) => b.dnaAverage - a.dnaAverage || a.name.localeCompare(b.name));
+  };
+
   // Calculate dashboard stats (based on the per-person averages)
   const calculateStats = () => {
     const ranked = getRankedEmployees();
@@ -514,6 +573,7 @@ export function ExportTab() {
 
   const stats = calculateStats();
   const rankedEmployees = getRankedEmployees();
+  const dnaRanking = getDnaRanking();
 
   if (isLoading) {
     return (
@@ -682,6 +742,57 @@ export function ExportTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* DNA Ranking */}
+      {dnaRanking.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-primary" />
+              Ranking do DNA
+            </CardTitle>
+            <CardDescription>
+              Média do percentual alcançado na meta DNA no período selecionado ({periodLabel})
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2 font-medium">#</th>
+                    <th className="text-left p-2 font-medium">Colaborador</th>
+                    <th className="text-center p-2 font-medium">Peso (méd.)</th>
+                    <th className="text-center p-2 font-medium">Meses</th>
+                    <th className="text-center p-2 font-medium text-primary">Média DNA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dnaRanking.map((emp, index) => (
+                    <tr
+                      key={emp.id}
+                      className={`border-b hover:bg-muted/30 ${index < 3 ? 'bg-primary/5' : ''}`}
+                    >
+                      <td className="p-2 font-bold text-primary">
+                        {index + 1}º {index < 3 && '🏆'}
+                      </td>
+                      <td className="p-2">
+                        <div>
+                          <p className="font-medium">{emp.name}</p>
+                          <p className="text-xs text-muted-foreground">{emp.role} • {emp.sector}</p>
+                        </div>
+                      </td>
+                      <td className="text-center p-2 text-muted-foreground">{formatPercent(emp.weightAverage)}%</td>
+                      <td className="text-center p-2 text-muted-foreground">{emp.monthsCount}</td>
+                      <td className="text-center p-2 font-bold text-primary">{formatPercent(emp.dnaAverage)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Preview Table */}
       {filteredEmployees.length > 0 && (
